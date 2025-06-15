@@ -4,6 +4,7 @@ def require_role(*roles):
     def decorator(f):
         def wrapper(*args, **kwargs):
             user = getattr(request, 'user', None)
+            # Role match must be exact, matching case (e.g., "Service Provider")
             if not user or user["role"] not in roles:
                 return {"error": "Forbidden"}, 403
             return f(*args, **kwargs)

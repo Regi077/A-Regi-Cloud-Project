@@ -14,3 +14,4 @@ def audit_log(action, user, details=None):
     # Optionally, also log to file
     with open("audit.log", "a") as f:
         f.write(str(entry) + "\n")
+
