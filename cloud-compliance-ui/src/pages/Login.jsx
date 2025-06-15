@@ -1,3 +1,11 @@
+
+// This component handles user login, validates credentials against a predefined list,
+// and calls the onLogin callback with the user object if successful.
+// It also displays a simple login form with username and password fields, and shows an error message if the credentials are invalid.
+// The component is styled using Tailwind CSS classes for a clean and modern look.  
+
+
+
 import React, { useState } from "react";
 import { users } from "../utils/rbac";
 
@@ -44,10 +52,4 @@ export default function Login({ onLogin }) {
     </div>
   );
 }
-
-
-// This component handles user login, validates credentials against a predefined list,
-// and calls the onLogin callback with the user object if successful.
-// It also displays a simple login form with username and password fields, and shows an error message if the credentials are invalid.
-// The component is styled using Tailwind CSS classes for a clean and modern look.  
 
