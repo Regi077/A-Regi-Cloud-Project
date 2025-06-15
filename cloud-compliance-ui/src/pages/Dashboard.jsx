@@ -1,11 +1,11 @@
-
-// This code defines a Dashboard component that renders different panels based on the user's role.
-// It includes tabs for Pipeline Status, Framework Upload, Architecture Input, Engineering Panel, Risk Diagram, and Agent Reasoning.
-// The visibility of each tab is controlled by the user's role, ensuring that only authorized users can access certain features.
-// The component uses React hooks to manage the current tab state and conditionally renders components based on the selected tab.
-
-
-
+// This component serves as the main dashboard for the application, providing a user interface
+// that allows users to navigate between different functionalities based on their roles.
+// It includes a header with the user's name and role, a logout button, and a tabbed navigation system
+// that displays different components depending on the selected tab.
+// The component uses React's state management to handle the current tab and conditionally renders components
+// based on the user's role, ensuring that only authorized users can access certain features.
+// The Dashboard component is designed to be flexible and extensible, allowing for easy addition of new features
+// and functionalities in the future.
 
 import React, { useState } from "react";
 import FrameworkUpload from "../components/FrameworkUpload.jsx";
@@ -38,8 +38,15 @@ export default function Dashboard({ user, onLogout }) {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="flex justify-between mb-6">
-        <h1 className="text-3xl font-bold">Welcome, {user.username} ({user.role})</h1>
-        <button onClick={onLogout} className="text-sm bg-red-400 text-white p-2 rounded">Logout</button>
+        <h1 className="text-3xl font-bold">
+          Welcome, {user.username} ({user.role})
+        </h1>
+        <button
+          onClick={onLogout}
+          className="text-sm bg-red-400 text-white p-2 rounded"
+        >
+          Logout
+        </button>
       </div>
       <div className="mb-6 flex space-x-4">
         {roleTabs.map(tabObj => (
@@ -47,11 +54,13 @@ export default function Dashboard({ user, onLogout }) {
             key={tabObj.key}
             onClick={() => setTab(tabObj.key)}
             className={tab === tabObj.key ? "font-bold" : ""}
-          >{tabObj.label}</button>
+          >
+            {tabObj.label}
+          </button>
         ))}
       </div>
       {tab === "status" && <PipelineStatus />}
-      {tab === "framework" && <FrameworkUpload />}
+      {tab === "framework" && <FrameworkUpload user={user} />}
       {tab === "arch" && user.role !== "viewer" && <ArchitectureInput />}
       {tab === "eng" && user.role === "admin" && <EngineeringPanel />}
       {tab === "risk" && <RiskDiagram />}
@@ -59,4 +68,3 @@ export default function Dashboard({ user, onLogout }) {
     </div>
   );
 }
-

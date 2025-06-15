@@ -1,9 +1,7 @@
-# This is the main entry point for the Flask application.
-# It initializes the Flask app, sets up CORS, rate limiting, and registers the API blueprint.   
-# The app runs on port 5000 in debug mode.
-# The endpoints are defined in the `endpoints.py` file, which handles various API requests.
-
-
+# The application is set to run in debug mode, which is useful for development.
+# In production, it is recommended to set debug to False and use a WSGI server like Gunicorn or uWSGI.      
+# The app listens on port 5000, which is the default port for Flask applications.
+# The `endpoints` module is where the actual API endpoints are defined, handling requests and responses.
 
 from flask import Flask
 from flask_cors import CORS
@@ -13,7 +11,13 @@ from endpoints import api
 
 app = Flask(__name__)
 CORS(app)
-limiter = Limiter(app, key_func=get_remote_address, default_limits=["30/minute"])
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["30/minute"]
+)
+limiter.init_app(app)
+
 app.register_blueprint(api)
 
 if __name__ == "__main__":
