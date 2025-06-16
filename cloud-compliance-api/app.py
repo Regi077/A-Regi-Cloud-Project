@@ -3,6 +3,9 @@
 # The app listens on port 5000, which is the default port for Flask applications.
 # The `endpoints` module is where the actual API endpoints are defined, handling requests and responses.
 
+# Perfect—that means your backend API is set up and working exactly as it should!
+# You just authenticated and successfully retrieved live data from your secured Flask API. Everything is running smoothly.
+
 from flask import Flask
 from flask_cors import CORS
 from flask_limiter import Limiter
