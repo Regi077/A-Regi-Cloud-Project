@@ -1,36 +1,49 @@
-// EngineeringPanel.jsx
-// This component fetches remediation suggestions from the backend,
-// allows user to Accept/Reject, and enables download of remediated IaC.
-// Adapted for Azure. Idiot-proof and fully commented.
+// =============================================================================
+//  EngineeringPanel.jsx -- Remediation Suggestion UI for Azure Cloud Compliance
+// =============================================================================
+//  Author: Reginald
+//  Last updated: 18th June 2025
+//
+//  DESCRIPTION:
+//    - Fetches remediation suggestions from the backend IaC analysis microservice.
+//    - Lets users Accept/Reject individual suggestions, and downloads remediated IaC.
+//    - Designed for idiot-proof, executive-grade usability with clear code comments.
+//
+//  KEY FEATURES:
+//    - Fetches remediation advice based on sample IaC for Azure.
+//    - Each suggestion is labeled by priority and has Accept/Reject actions.
+//    - Accept: appends the recommended block to the original IaC for download.
+//    - Download button lets users export the updated, compliant IaC.
+//    - Dummy content is used for demo; integrate with real context/state in production.
+//    - Tailwind CSS for modern, accessible styling.
+// =============================================================================
 
 import React, { useEffect, useState } from "react";
 
 export default function EngineeringPanel() {
+  // State for suggestions from backend, user IaC, and the remediated result
   const [suggestions, setSuggestions] = useState([]);
   const [iacContent, setIacContent] = useState(""); 
-  // Original IaC content (simulate here or fetch from backend/UI)
   const [remediatedIac, setRemediatedIac] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Dummy: replace with your real IaC content or fetch from context/state
+  // On mount, populate IaC sample (replace with real input in live system)
   useEffect(() => {
     setIacContent(
       'resource "azurerm_storage_account" "example" {\n  name = "mystorageaccount"\n  location = "eastus"\n}'
     );
   }, []);
 
-  // Fetch suggestions from backend
+  // Fetch remediation suggestions whenever IaC content changes
   useEffect(() => {
     setLoading(true);
-    // Dummy POST to backend; update endpoint and form data as needed
     fetch("http://localhost:5030/analyze-iac", {
       method: "POST",
       body: (() => {
         const fd = new FormData();
-        // In real app, use file input or context/state for IaC file
         const blob = new Blob([iacContent], { type: "text/plain" });
         fd.append("iac", blob, "iac.tf");
-        fd.append("framework", "Azure"); // Or allow user to select
+        fd.append("framework", "Azure");
         return fd;
       })(),
     })
@@ -42,14 +55,14 @@ export default function EngineeringPanel() {
       .catch(() => setLoading(false));
   }, [iacContent]);
 
-  // Accept a suggestion (append its block to the IaC and store)
+  // Handle Accept: append block to IaC
   const handleAccept = (block) => {
     const updated = iacContent + "\n\n" + block;
     setRemediatedIac(updated);
     alert("Remediation block appended! Download below.");
   };
 
-  // Download remediated IaC as file
+  // Download remediated IaC as .tf file
   const downloadRemediated = () => {
     const blob = new Blob([remediatedIac], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -59,6 +72,10 @@ export default function EngineeringPanel() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // =============================================================================
+  //  Main UI: Display suggestions and actions, show remediated IaC for download
+  // =============================================================================
 
   return (
     <div>
@@ -113,3 +130,7 @@ export default function EngineeringPanel() {
     </div>
   );
 }
+
+// =============================================================================
+//  End of EngineeringPanel.jsx -- Hassle-free, idiot-proof remediation panel UI
+// =============================================================================

@@ -1,6 +1,34 @@
+// =============================================================================
+//  IamAuditPanel.jsx -- Interactive IAM Audit UI Component
+// =============================================================================
+//  Author: Reginald 
+//  Last updated: 18th June 2025
+//
+//  DESCRIPTION:
+//    - Provides a user interface for uploading or pasting IAM policy JSON for security auditing.
+//    - Connects directly to Phase 6 backend microservice (port 5040) to perform audits.
+//    - Displays color-coded risk scores and human-readable audit findings in real time.
+//    - Designed for ease of use, smooth onboarding, and minimal error risk.
+//
+//  HOW IT WORKS:
+//    - User uploads a .json file *or* pastes IAM JSON directly into a textarea.
+//    - On "Audit IAM" button click, input is validated and POSTed to the backend endpoint.
+//    - Displays high/medium/low risk counts and full details with clear visual cues.
+//    - Handles file errors, JSON validation, and backend failures gracefully.
+//
+//  KEY FEATURES:
+//    - Idiot-proof UI with clear instructions and feedback.
+//    - Rich color coding for risk (red/yellow/green).
+//    - No external state or dependencies: easy to drop into any React dashboard.
+//
+//  INTEGRATION NOTES:
+//    - Backend microservice must be running at http://localhost:5040/audit-iam.
+//    - To extend: add more fields, tweak risk color logic, or support bulk audits.
+// =============================================================================
+
 import React, { useState } from "react";
 
-// Utility for color-coding risk
+// Utility for color-coding risk in audit results
 function riskColor(risk) {
   if (risk === "High") return "text-red-600 font-bold";
   if (risk === "Medium") return "text-yellow-600 font-bold";
@@ -8,22 +36,22 @@ function riskColor(risk) {
 }
 
 export default function IamAuditPanel() {
-  const [input, setInput] = useState("");     // For textarea paste
-  const [result, setResult] = useState(null); // For backend results
-  const [error, setError] = useState("");     // For error messages
+  const [input, setInput] = useState("");      // IAM JSON text (manual paste or file upload)
+  const [result, setResult] = useState(null);  // Audit results from backend
+  const [error, setError] = useState("");      // Any user or backend error
 
-  // Handle file upload (reads and sets textarea too)
+  // Handles file uploads (reads file, puts content in textarea, clears errors)
   function handleFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      setInput(e.target.result); // show file content in textarea
+      setInput(e.target.result); // Show uploaded file in textarea for transparency
       setError("");
     };
     reader.onerror = () => setError("Failed to read file. Please try another file.");
     reader.readAsText(file);
   }
 
-  // Handle audit action (from textarea)
+  // Handles clicking "Audit IAM": parses JSON, sends to backend, processes response
   function handleAudit() {
     setError("");
     let json;
@@ -46,10 +74,15 @@ export default function IamAuditPanel() {
       .catch(() => setError("Failed to audit IAM JSON!"));
   }
 
+  // =============================================================================
+  //  Main UI: File upload, textarea, Audit button, results, and error feedback
+  // =============================================================================
+
   return (
     <div className="p-6 bg-white rounded shadow">
       <h2 className="font-bold text-xl mb-4">IAM Audit</h2>
       
+      {/* File Upload Section */}
       <div className="mb-3">
         <label className="block font-semibold mb-1">Upload .json file:</label>
         <input
@@ -62,6 +95,7 @@ export default function IamAuditPanel() {
         />
       </div>
       
+      {/* Manual Paste/Edit Section */}
       <div className="mb-3">
         <label className="block font-semibold mb-1">Or paste/edit IAM JSON:</label>
         <textarea
@@ -72,6 +106,7 @@ export default function IamAuditPanel() {
         />
       </div>
       
+      {/* Trigger Audit Button */}
       <button
         className="bg-blue-600 text-white px-4 py-2 rounded"
         onClick={handleAudit}
@@ -80,10 +115,12 @@ export default function IamAuditPanel() {
         Audit IAM
       </button>
 
+      {/* Error Display */}
       {error && (
         <div className="mt-3 text-red-600 font-semibold">{error}</div>
       )}
 
+      {/* Results: risk counts and detailed findings */}
       {result && (
         <div className="mt-6">
           <p><b>High Risk:</b> {result.high_risk}</p>
@@ -101,11 +138,7 @@ export default function IamAuditPanel() {
     </div>
   );
 }
-// This component allows users to upload a JSON file or paste IAM JSON directly.
-// It sends the JSON to a backend endpoint for auditing and displays the results.
-// The results include risk levels and detailed issues, color-coded for easy identification.
-// The component also handles errors gracefully, providing feedback to the user.
-// The riskColor function is used to apply different text colors based on the risk level.
-// The component is styled using Tailwind CSS for a clean and modern look.
-// The component is designed to be user-friendly, with clear labels and instructions.
-// The handleFile function reads the uploaded file and sets its content in the textarea.
+
+// =============================================================================
+//  End of IamAuditPanel.jsx -- Secure, user-friendly IAM risk auditing panel
+// =============================================================================

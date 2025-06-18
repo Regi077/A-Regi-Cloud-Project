@@ -1,10 +1,25 @@
-// This component provides a UI for delta analysis between pre and post remediation JSON data.
-// It allows users to input JSON data, compare them, and export the results as a PDF.
-// The component uses React hooks for state management and fetch API for backend communication.
-// The UI is styled with Tailwind CSS classes for a clean and modern look.
-// The component includes error handling for JSON parsing and backend responses.
-// The export functionality creates a downloadable PDF report of the analysis results.
-// The component is designed to be reusable and can be integrated into larger applications easily.
+// =============================================================================
+//  DeltaAnalysisPanel.jsx -- UI for Delta Analysis & PDF Export
+// =============================================================================
+//  Author: Reginald
+//  Last updated: 18th June 2025
+//
+//  DESCRIPTION:
+//    - Provides a user-friendly interface for comparing JSON objects before and after remediation.
+//    - Visualizes pass/fail status for each field and enables export of results as a PDF report.
+//    - Supports error handling, clear state management, and integrates with backend microservice.
+//
+//  KEY FEATURES:
+//    - Two textarea inputs for pre- and post-remediation JSON.
+//    - 'Compare' button: calls backend to compute field-level delta analysis.
+//    - Pass %, detailed changes, and recommendations rendered for easy review.
+//    - 'Export as PDF' button: calls backend to generate and download a PDF summary.
+//    - Tailwind CSS for modern, accessible styling.
+//
+//  INTEGRATION NOTES:
+//    - Expects backend delta-analysis service running at http://localhost:5050.
+//    - Easy to extend: can embed as a dashboard tab or as a standalone report UI.
+// =============================================================================
 
 import React, { useState } from "react";
 
@@ -44,6 +59,11 @@ export default function DeltaAnalysisPanel() {
         a.click();
       });
   }
+
+
+// =============================================================================
+//  Main UI: Input areas, compare/export controls, and delta results
+// =============================================================================
 
   return (
     <div className="p-6 bg-white rounded shadow">
@@ -103,3 +123,7 @@ export default function DeltaAnalysisPanel() {
     </div>
   );
 }
+
+// =============================================================================
+//  End of DeltaAnalysisPanel.jsx -- Hassle-free, results-focused delta analysis UI
+// =============================================================================
