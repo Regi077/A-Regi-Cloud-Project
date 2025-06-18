@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from qdrant_utils import get_rules_from_qdrant  # FIXED: import from qdrant_utils
+from qdrant_utils import get_rules_from_qdrant
 from validation_utils import validate_iac_against_rules
+
+from event_bus import publish_event  
 
 UPLOAD_DIR = "uploads"
 import os; os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -21,6 +23,15 @@ def validate_framework():
 
     # 3. Validate IaC against rules
     validation_result = validate_iac_against_rules(iac_content, rules)
+
+    # 4. Publish event to RabbitMQ (dashboard gets update) 
+    event_payload = {
+        "status": "done",
+        "pipeline": "framework-validator",
+        "framework": framework,
+        "validation_result": validation_result
+    }
+    publish_event("validation.pipeline", event_payload)
 
     return jsonify(validation_result)
 

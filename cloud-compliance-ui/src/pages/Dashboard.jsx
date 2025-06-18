@@ -5,7 +5,6 @@
 // This structure ensures only authorized users can access sensitive features, while allowing for straightforward extension with new tabs or panels.
 // The code emphasizes maintainability, clarity, and security through role-based conditional rendering.
 
-
 import React, { useState } from "react";
 import FrameworkUpload from "../components/FrameworkUpload.jsx";
 import ArchitectureInput from "../components/ArchitectureInput.jsx";
@@ -14,7 +13,9 @@ import RiskDiagram from "../components/RiskDiagram.jsx";
 import PipelineStatus from "../components/PipelineStatus.jsx";
 import AgentReasoning from "../components/AgentReasoning.jsx";
 import IamAuditPanel from "../components/IamAuditPanel.jsx"; // Import IAM Audit panel
+import DeltaAnalysisPanel from "../components/DeltaAnalysisPanel.jsx"; // Import Delta Analysis panel
 
+// Add new tab for Delta Analysis
 const TABS = [
   { key: "status", label: "Pipeline Status" },
   { key: "framework", label: "Frameworks" },
@@ -22,13 +23,15 @@ const TABS = [
   { key: "eng", label: "Engineering" },
   { key: "iam", label: "IAM Audit" },
   { key: "risk", label: "Risk Diagram" },
-  { key: "reason", label: "Agent Reasoning" }
+  { key: "reason", label: "Agent Reasoning" },
+  { key: "delta", label: "Delta Analysis" } // <-- Added delta tab
 ];
 
 export default function Dashboard({ user, onLogout }) {
   const [tab, setTab] = useState("status");
 
   // RBAC: Full access for admin and Service Provider
+  // Delta Analysis is only available to admin and Service Provider roles
   const roleTabs = TABS.filter(tabObj => {
     if (["admin", "Service Provider"].includes(user.role)) return true;
     if (user.role === "Client") return ["status", "framework", "risk"].includes(tabObj.key);
@@ -69,6 +72,8 @@ export default function Dashboard({ user, onLogout }) {
       {tab === "iam" && ["admin", "Service Provider"].includes(user.role) && <IamAuditPanel />}
       {tab === "risk" && <RiskDiagram />}
       {tab === "reason" && ["admin", "Service Provider"].includes(user.role) && <AgentReasoning />}
+      {/* Show Delta Analysis panel only to admin and Service Provider */}
+      {tab === "delta" && ["admin", "Service Provider"].includes(user.role) && <DeltaAnalysisPanel />}
     </div>
   );
 }

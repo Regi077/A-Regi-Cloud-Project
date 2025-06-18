@@ -1,0 +1,105 @@
+version: "3.9"
+
+services:
+  # === Phase 1: Frontend UI (React) ===
+  compliance-ui:
+    build: ./cloud-compliance-ui           # Folder containing your UI code and Dockerfile
+    ports:
+      - "3000:3000"                        # Expose React dev server on host port 3000
+    depends_on:
+      - cloud-compliance-api               # UI should only start after backend API is ready
+
+  # === Phase 2: API Gateway / MCP Layer ===
+  cloud-compliance-api:
+    build: ./cloud-compliance-api          # Your main backend API folder/Dockerfile
+    ports:
+      - "5000:5000"                        # Expose Flask API on host port 5000
+    depends_on:
+      - rule-ingestion                     # API depends on rule ingestion
+      - rabbitmq                           # and on RabbitMQ for event-driven comms
+
+  # === Phase 3: Rule Ingestion Pipeline ===
+  rule-ingestion:
+    build: ./cloud-compliance-rule-ingestion
+    ports:
+      - "5010:5010"                        # Rule ingestion microservice, port 5010
+    depends_on:
+      - rabbitmq                           # Wait for RabbitMQ before starting
+
+  # === Phase 4: Framework Validation Pipeline ===
+  framework-validation:
+    build: ./cloud-compliance-framework-validator
+    ports:
+      - "5020:5020"                        # Framework validator microservice, port 5020
+    depends_on:
+      - rabbitmq                           # Wait for RabbitMQ before starting
+
+  # === Phase 5: IaC Analysis Pipeline ===
+  iac-analysis:
+    build: ./cloud-compliance-iac-analysis
+    ports:
+      - "5030:5030"                        # IaC analysis/remediation, port 5030
+    depends_on:
+      - rabbitmq                           # Wait for RabbitMQ before starting
+
+  # === Phase 6: IAM Audit Pipeline ===
+  iam-audit:
+    build: ./cloud-compliance-iam-audit
+    ports:
+      - "5040:5040"                        # IAM auditing, port 5040
+    depends_on:
+      - rabbitmq                           # Wait for RabbitMQ before starting
+
+  # === Phase 7: Delta Analysis Pipeline ===
+  delta-analysis:
+    build: ./cloud-compliance-delta-analysis
+    ports:
+      - "5050:5050"                        # Delta reporting, port 5050
+    volumes:
+      - ./cloud-compliance-delta-analysis/reports:/app/reports  # PDF exports persist on host
+    depends_on:
+      - rabbitmq                           # Wait for RabbitMQ before starting
+
+  # === Qdrant Vector Database ===
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"                        # Vector DB for LLM embeddings (Qdrant default port)
+
+  # === Ollama (LLM Model) ===
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"                      # Ollama model server
+
+  # === RabbitMQ (Event Bus) ===
+  rabbitmq:
+    image: rabbitmq:4.1.1-management-alpine
+    ports:
+      - "5672:5672"                        # RabbitMQ broker port (used by your pipelines)
+      - "15672:15672"                      # RabbitMQ management UI (http://localhost:15672)
+    environment:
+      RABBITMQ_DEFAULT_USER: admin         # Universal credentials for all microservices
+      RABBITMQ_DEFAULT_PASS: password
+
+  # === Phase 8: Dashboard Backend (Flask + RabbitMQ integration) ===
+  cloud-compliance-dashboard:
+    build: ./cloud-compliance-dashboard
+    ports:
+      - "5001:5000"                        # Dashboard backend, port 5001 (mapped to container 5000)
+    depends_on:
+      - rabbitmq                           # Wait for RabbitMQ before starting
+    environment:
+      - FLASK_ENV=development              # Flask development mode (change for prod)
+
+# ======= Notes/Best Practices ============== Notes/Best Practices =======
+# - Every pipeline/microservice that publishes or consumes from RabbitMQ
+#   explicitly waits for RabbitMQ (depends_on).
+# - Each build path (e.g., ./cloud-compliance-api) must exist at the same directory level as this file.
+# - All ports are unique and mapped to avoid collision.
+# - Add persistent storage as needed (like delta-analysis reports).
+# - To bring up the system: `docker compose up --build`
+# - To shut down/remove: `docker compose down`
+# - RabbitMQ Management UI: http://localhost:15672 (login: admin/password)
+# - React UI: http://localhost:3000
+# - Add new microservices, simply follow the established build/ports pattern above.

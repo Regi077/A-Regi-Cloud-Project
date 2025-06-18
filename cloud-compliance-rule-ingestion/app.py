@@ -5,19 +5,18 @@
 # saves the extracted rules as JSON, and upserts them to Qdrant.
 # The application runs on port 5010 and is set to debug mode for development.
 
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from parse_utils import parse_doc_to_chunks, extract_rules_with_llm, save_json
 from qdrant_utils import upsert_rules_to_qdrant
-# Ensure necessary directories exist
+
+from event_bus import publish_event   # 
 
 UPLOAD_DIR = "uploads"
 PARSED_DIR = "parsed_rules"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PARSED_DIR, exist_ok=True)
-
 
 app = Flask(__name__)
 CORS(app)
@@ -37,6 +36,17 @@ def ingest_doc():
     json_path = save_json(rules_json, filename, PARSED_DIR)
     # 4. Upsert rules to Qdrant
     qdrant_status = upsert_rules_to_qdrant(rules_json)
+
+    # 5. Publish pipeline event to RabbitMQ  
+    event_payload = {
+        "status": "done",
+        "pipeline": "rule-ingestion",
+        "file": filename,
+        "json_path": json_path,
+        "qdrant": qdrant_status
+    }
+    publish_event("rule.ingestion", event_payload)
+
     return jsonify({
         "status": "success",
         "file": filename,
@@ -46,4 +56,3 @@ def ingest_doc():
 
 if __name__ == "__main__":
     app.run(port=5010, debug=True)
-
