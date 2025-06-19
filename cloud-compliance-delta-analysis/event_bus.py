@@ -12,6 +12,7 @@
 #
 #  HOW IT WORKS:
 #    - get_connection() establishes a connection to RabbitMQ using robust, env-driven credentials.
+#      Now includes retry logic to avoid race conditions at startup.
 #    - publish_event(topic, payload) sends a durable message to the
 #      specified queue/topic, with the payload serialized as JSON.
 #    - Always closes the connection after publishing to avoid resource leaks.
@@ -20,23 +21,31 @@
 import pika
 import os
 import json
+import time
 
 def get_connection():
     """
     Establish a connection to the RabbitMQ broker using environment variables.
+    Retries connection for up to 10 attempts (with 5s wait) for Docker race condition safety.
     Defaults ensure reliability in Docker, Azure, and other cloud CI/CD systems.
     """
     host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
     port = int(os.getenv('RABBITMQ_PORT', 5672))
     user = os.getenv('RABBITMQ_USER', 'admin')
     password = os.getenv('RABBITMQ_PASS', 'password')
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=host,
-            port=port,
-            credentials=pika.PlainCredentials(user, password)
-        )
-    )
+    for attempt in range(10):
+        try:
+            return pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=host,
+                    port=port,
+                    credentials=pika.PlainCredentials(user, password)
+                )
+            )
+        except pika.exceptions.AMQPConnectionError:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt+1}/10")
+            time.sleep(5)
+    raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
 def publish_event(topic, payload):
     """

@@ -22,23 +22,31 @@
 import pika
 import os
 import json
+import time
 
 def get_connection():
     """
     Establish and return a blocking connection to RabbitMQ.
+    Retries up to 10 times with a 5-second delay for Docker race condition safety.
     Supports robust configuration using environment variables for Azure/AWS/GCP.
     """
     host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
     port = int(os.getenv('RABBITMQ_PORT', 5672))
     user = os.getenv('RABBITMQ_USER', 'admin')
     password = os.getenv('RABBITMQ_PASS', 'password')
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=host,
-            port=port,
-            credentials=pika.PlainCredentials(user, password)
-        )
-    )
+    for attempt in range(10):
+        try:
+            return pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=host,
+                    port=port,
+                    credentials=pika.PlainCredentials(user, password)
+                )
+            )
+        except pika.exceptions.AMQPConnectionError:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt+1}/10")
+            time.sleep(5)
+    raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
 def consume_events(topic, handler):
     """

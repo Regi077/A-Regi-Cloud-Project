@@ -25,28 +25,38 @@
 import pika
 import os
 import json
+import time
 
 def get_connection():
     """
-    Establishes a connection to RabbitMQ using environment variables (or defaults).
-    Host, port, username, and password are configurable—never hardcoded for security.
+    Establishes a robust connection to RabbitMQ using environment variables (or defaults).
+    Retries up to 10 times in case RabbitMQ is not yet ready, for zero-downtime startup.
+    All settings are future-proofed and cloud-portable.
     """
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
     port = int(os.getenv("RABBITMQ_PORT", 5672))
     user = os.getenv("RABBITMQ_USER", "admin")
     password = os.getenv("RABBITMQ_PASS", "password")
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=host,
-            port=port,
-            credentials=pika.PlainCredentials(user, password)
-        )
-    )
+
+    for attempt in range(10):
+        try:
+            return pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=host,
+                    port=port,
+                    credentials=pika.PlainCredentials(user, password)
+                )
+            )
+        except pika.exceptions.AMQPConnectionError:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10")
+            time.sleep(5)
+    raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
 def publish_event(topic, payload):
     """
     Publishes a JSON-serializable payload to the specified queue/topic.
     Closes the connection after sending for statelessness.
+    Queue is always declared durable for high reliability.
     """
     connection = get_connection()
     channel = connection.channel()

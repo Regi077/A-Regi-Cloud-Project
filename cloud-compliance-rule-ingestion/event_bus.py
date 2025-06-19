@@ -9,8 +9,8 @@
 #      other microservices and the dashboard can react to pipeline progress.
 #
 #  HOW IT WORKS:
-#    - get_connection(): Creates a connection to the RabbitMQ broker using
-#      environment variables (Docker-ready, secure, future-proof).
+#    - get_connection(): Creates a robust connection to the RabbitMQ broker using
+#      environment variables (Docker-ready, secure, future-proof, with retry logic).
 #    - publish_event(): Publishes a JSON-serializable payload to a named queue
 #      (topic), with durability (message will survive broker restarts).
 #
@@ -27,23 +27,32 @@
 import pika
 import os
 import json
+import time
 
 def get_connection():
     """
-    Establishes a robust blocking connection to RabbitMQ using environment variables.
+    Establishes a robust blocking connection to RabbitMQ using environment variables,
+    with retry logic to avoid service startup race conditions.
     Uses 'rabbitmq' as host (Docker Compose), with admin/password unless overridden.
     """
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
     port = int(os.getenv("RABBITMQ_PORT", 5672))
     user = os.getenv("RABBITMQ_USER", "admin")
     password = os.getenv("RABBITMQ_PASS", "password")
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=host,
-            port=port,
-            credentials=pika.PlainCredentials(user, password)
-        )
-    )
+
+    for attempt in range(10):
+        try:
+            return pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=host,
+                    port=port,
+                    credentials=pika.PlainCredentials(user, password)
+                )
+            )
+        except pika.exceptions.AMQPConnectionError:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10")
+            time.sleep(5)
+    raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
 def publish_event(topic, payload):
     """

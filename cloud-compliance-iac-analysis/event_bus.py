@@ -27,29 +27,38 @@
 import pika
 import os
 import json
+import time
 
 def get_connection():
     """
     Establish a new connection to RabbitMQ using robust, environment-driven config.
+    Adds retry logic to wait for RabbitMQ if it isn't yet ready (avoids race conditions).
     Returns a pika.BlockingConnection object.
     """
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
     port = int(os.getenv("RABBITMQ_PORT", 5672))
     user = os.getenv("RABBITMQ_USER", "admin")
     password = os.getenv("RABBITMQ_PASS", "password")
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=host,
-            port=port,
-            credentials=pika.PlainCredentials(user, password)
-        )
-    )
+    for attempt in range(10):
+        try:
+            return pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=host,
+                    port=port,
+                    credentials=pika.PlainCredentials(user, password)
+                )
+            )
+        except pika.exceptions.AMQPConnectionError:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10")
+            time.sleep(5)
+    raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
 def publish_event(topic, payload):
     """
     Publishes a JSON event to the specified RabbitMQ queue.
     - topic (str): The name of the queue/topic (e.g., 'remediation.pipeline')
     - payload (dict): The event data to send (will be serialized as JSON)
+    Ensures durability and reliability for event-driven integrations.
     """
     connection = get_connection()
     channel = connection.channel()
