@@ -17,7 +17,6 @@
 #    - RabbitMQ admin:        http://localhost:15672  (admin/password)
 #    - React UI:              http://localhost:3000
 # ==============================================================================
-version: "3.9"
 
 services:
   # === Phase 1: Frontend UI (React, Vite) ===
