@@ -87,9 +87,7 @@ cloud-compliance-api/
 ├── requirements.txt # Python dependencies
 ├── Dockerfile # Container build instructions
 
-##  How to Run (Development & Docker)
-
-**Locally (with Python)**
+## 💡 How to Run 
 
 pip install -r requirements.txt
 python app.py
