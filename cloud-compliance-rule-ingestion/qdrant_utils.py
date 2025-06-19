@@ -13,14 +13,17 @@
 #
 #  DEPENDENCIES:
 #    - qdrant-client (Python): Python SDK for Qdrant vector DB.
+#
+#  CONFIGURATION:
+#    - QDRANT_URL: Read from environment or defaults to Docker Compose service name ('qdrant:6333').
+#    - COLLECTION: Compliance rules collection name (default: 'compliance_rules').
 # =============================================================================
 
 from qdrant_client import QdrantClient
 import os
 
-# URL for the local Qdrant instance (as per docker-compose)
-QDRANT_URL = "http://localhost:6333"
-COLLECTION = "compliance_rules"
+QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
+COLLECTION = os.getenv("QDRANT_COLLECTION", "compliance_rules")
 
 # -----------------------------------------------------------------------------
 #  upsert_rules_to_qdrant

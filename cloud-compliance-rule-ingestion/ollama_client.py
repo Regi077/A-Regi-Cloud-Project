@@ -10,17 +10,21 @@
 #      from uploaded documents.
 #
 #  HOW IT WORKS:
-#    - The query_ollama() function sends a prompt to the local Ollama server,
-#      receives a text-based completion, and returns the model's response.
+#    - The query_ollama() function sends a prompt to the Ollama server
+#      (containerized or native), receives a completion, and returns the response.
 #
-#  DEPENDENCIES:
-#    - Ollama must be running at the expected URL and port (http://localhost:11434)
-#    - The Gemma:2b model must be available in the Ollama server.
+#  CONFIGURATION:
+#    - OLLAMA_URL can be set via environment variable for Docker/host/Cloud.
+#      - Defaults to "http://ollama:11434/api/generate" (service name in Compose)
+#      - For host/native, set OLLAMA_URL="http://host.docker.internal:11434/api/generate"
 # =============================================================================
 
 import requests
+import os
 
-OLLAMA_URL = "http://localhost:11434/api/generate"   # Local Ollama API endpoint
+OLLAMA_URL = os.getenv(
+    "OLLAMA_URL", "http://ollama:11434/api/generate"
+)  #: Use Docker Compose service name
 
 def query_ollama(prompt):
     """
@@ -39,13 +43,13 @@ def query_ollama(prompt):
         rules_json = query_ollama("Extract all NIST security requirements...")
     """
     data = {
-        "model": "gemma:2b",      # Model name (must match your Ollama setup)
-        "prompt": prompt,         # The text to analyze or answer
-        "stream": False,          # Set to False for full (non-streaming) response
-        "temperature": 0.1        # Low temp for deterministic, reproducible output
+        "model": "gemma:2b",
+        "prompt": prompt,              # The text to analyze or answer
+        "stream": False,               # Set to False for full (non-streaming) response
+        "temperature": 0.1             # Low temp for deterministic, reproducible output
     }
     resp = requests.post(OLLAMA_URL, json=data)
-    resp.raise_for_status()       # Raise error if Ollama is not reachable
+    resp.raise_for_status()
     return resp.json().get("response", "")
 
 # =============================================================================
