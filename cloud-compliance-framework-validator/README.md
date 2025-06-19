@@ -30,7 +30,7 @@
 
 ---
 
-## Technology Stack
+## 🧑‍💻 Technology Stack
 
 - **Python 3.13** — Core application logic and validation flows
 - **Flask** + **Flask-CORS** — Secure, idiot-proof API endpoints

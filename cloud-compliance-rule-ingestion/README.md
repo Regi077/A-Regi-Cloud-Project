@@ -27,7 +27,7 @@ Phase 3 of the Cloud Compliance Tool delivers an automated, AI-driven pipeline f
 
 ---
 
-## Technology Stack
+## 🧑‍💻 Technology Stack
 
 - **Python 3.13** – Primary programming language.
 - **Flask** – Web server and API framework.
