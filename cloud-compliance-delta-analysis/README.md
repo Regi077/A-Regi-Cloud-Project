@@ -84,15 +84,17 @@ The **Delta Analysis Pipeline** is designed to provide rapid, field-level compli
   ```bash
   docker compose up --build delta-analysis
 
-📁 Project Structure (Highlights)
 
-cloud-compliance-delta-analysis/
-├── app.py
-├── delta_utils.py
-├── event_bus.py
-├── requirements.txt
-├── Dockerfile
-├── reports/                  # All exported PDF reports are saved here
+`📁 Project Structure (Highlights)`
+
+`cloud-compliance-delta-analysis/`
+`├── app.py`
+`├── delta_utils.py`
+`├── event_bus.py`
+`├── requirements.txt`
+`├── Dockerfile`
+`├── reports/                  # All exported PDF reports are saved here`
+
 
 ## 🚀 Closing
 
