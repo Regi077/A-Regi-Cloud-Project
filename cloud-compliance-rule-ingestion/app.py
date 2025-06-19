@@ -80,7 +80,8 @@ def ingest_doc():
 
 if __name__ == "__main__":
     # Note: Debug=True is for development only! Use gunicorn for production.
-    app.run(port=5010, debug=True)
+    # The host="0.0.0.0" ensures Docker port mapping works and is essential.
+    app.run(host="0.0.0.0", port=5010, debug=True)
 
 # =============================================================================
 #  End of app.py  (Cloud Compliance Rule Ingestion Pipeline)

@@ -69,7 +69,8 @@ def validate_framework():
 # Entry point: runs the Flask server on port 5020 in debug mode.
 # -----------------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(port=5020, debug=True)
+    # CRITICAL FIX: bind to host="0.0.0.0" so Docker port mapping works!
+    app.run(host="0.0.0.0", port=5020, debug=True)
 
 # =============================================================================
 #  End of app.py (Cloud Compliance Framework Validator)

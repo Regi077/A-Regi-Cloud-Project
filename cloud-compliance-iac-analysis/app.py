@@ -64,7 +64,8 @@ def analyze_iac():
 # Start the Flask microservice (runs on port 5030)
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(port=5030, debug=True)
+    # CRITICAL: Bind to all interfaces for Docker container compatibility
+    app.run(host="0.0.0.0", port=5030, debug=True)
 
 # =============================================================================
 #  End of app.py (cloud-compliance-iac-analysis)

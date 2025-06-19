@@ -83,7 +83,8 @@ def export():
 # (Use production-ready server in prod.)
 # --------------------------------------------------------
 if __name__ == "__main__":
-    app.run(port=5050, debug=True)
+    # IMPORTANT: Bind to 0.0.0.0 so Docker Compose port mapping works!
+    app.run(host="0.0.0.0", port=5050, debug=True)
 
 # =============================================================================
 #  End of app.py (Delta Analysis microservice)

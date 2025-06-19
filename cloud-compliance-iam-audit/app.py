@@ -54,10 +54,11 @@ def audit_iam_endpoint():
     return jsonify(result)
 
 # -----------------------------------------------------------------------------
-# Main Application Entry Point
+# Main Application Entry Point (Docker-ready: host="0.0.0.0")
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(port=5040, debug=True)
+    # IMPORTANT: Bind to 0.0.0.0 to be reachable via Docker port mapping
+    app.run(host="0.0.0.0", port=5040, debug=True)
 
 # =============================================================================
 #  End of app.py (IAM Audit Pipeline, fully event-driven and dashboard-ready)

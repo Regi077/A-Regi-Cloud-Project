@@ -148,7 +148,8 @@ def log_selected_api_access():
 # Main Entrypoint
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)  # In production: use debug=False and WSGI server
+    # NOTE: host='0.0.0.0' required for Docker port mapping
+    app.run(host="0.0.0.0", port=5000, debug=True)  # In production: use debug=False and WSGI server
 
 # =============================================================================
 #  End of app.py

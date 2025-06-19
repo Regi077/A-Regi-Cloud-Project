@@ -25,6 +25,7 @@ services:
     build: ./cloud-compliance-ui           # Folder containing your UI code and Dockerfile
     ports:
       - "3000:3000"                        # Expose React dev server on host port 3000
+      - "4173:4173"                        # for preview
     depends_on:
       - cloud-compliance-api               # UI should only start after backend API is ready
 
