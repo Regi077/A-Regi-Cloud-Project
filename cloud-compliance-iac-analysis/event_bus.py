@@ -17,22 +17,31 @@
 #    - Call publish_event(topic, payload) after completing any major pipeline step.
 #
 #  ENVIRONMENT:
-#    - Assumes RabbitMQ is available at hostname 'rabbitmq' with user: admin, password: password.
-#    - These credentials are set in your docker-compose.yml for all Python services.
+#    - Reads RabbitMQ config from environment variables for Docker/Cloud robustness:
+#        RABBITMQ_HOST (default: 'rabbitmq')
+#        RABBITMQ_PORT (default: 5672)
+#        RABBITMQ_USER (default: 'admin')
+#        RABBITMQ_PASS (default: 'password')
 # =============================================================================
 
 import pika
+import os
 import json
 
 def get_connection():
     """
-    Establish a new connection to RabbitMQ using shared service credentials.
+    Establish a new connection to RabbitMQ using robust, environment-driven config.
     Returns a pika.BlockingConnection object.
     """
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
+    port = int(os.getenv("RABBITMQ_PORT", 5672))
+    user = os.getenv("RABBITMQ_USER", "admin")
+    password = os.getenv("RABBITMQ_PASS", "password")
     return pika.BlockingConnection(
         pika.ConnectionParameters(
-            host='rabbitmq',
-            credentials=pika.PlainCredentials('admin', 'password')
+            host=host,
+            port=port,
+            credentials=pika.PlainCredentials(user, password)
         )
     )
 
@@ -54,5 +63,5 @@ def publish_event(topic, payload):
     connection.close()
 
 # =============================================================================
-#  End of event_bus.py (Reusable for all Python microservices)
+#  End of event_bus.py (Reusable, robust, and onboarding-ready)
 # =============================================================================

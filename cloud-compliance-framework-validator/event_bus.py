@@ -11,21 +11,33 @@
 #  USAGE:
 #    - Call publish_event(topic, payload) from anywhere in the pipeline to emit a message.
 #    - Ensures every event is delivered reliably (durable queues).
-#    - Use the same credentials and host as defined in docker-compose.yml.
+#    - Uses environment variables for robust Docker, cloud, and on-prem support.
+#
+#  CONFIGURATION (via environment or Docker Compose):
+#    - RABBITMQ_HOST: default "rabbitmq"
+#    - RABBITMQ_PORT: default 5672
+#    - RABBITMQ_USER: default "admin"
+#    - RABBITMQ_PASS: default "password"
 # =============================================================================
 
 import pika
+import os
 import json
 
 def get_connection():
     """
-    Establish a connection to the RabbitMQ broker.
-    Uses fixed host/credentials for project-wide consistency.
+    Establish a connection to the RabbitMQ broker using robust environment-based config.
+    All values are overridable via env vars for seamless dev, prod, and Azure deployments.
     """
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
+    port = int(os.getenv("RABBITMQ_PORT", 5672))
+    user = os.getenv("RABBITMQ_USER", "admin")
+    password = os.getenv("RABBITMQ_PASS", "password")
     return pika.BlockingConnection(
         pika.ConnectionParameters(
-            host='rabbitmq',  # Must match docker-compose service name
-            credentials=pika.PlainCredentials('admin', 'password')
+            host=host,
+            port=port,
+            credentials=pika.PlainCredentials(user, password)
         )
     )
 

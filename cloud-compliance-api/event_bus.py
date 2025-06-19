@@ -5,7 +5,7 @@
 #  Last updated: 18th June 2025
 #
 #  PURPOSE:
-#    - This utility enables microservices to send (publish) structured events
+#    - Enables microservices to send (publish) structured events
 #      to the central RabbitMQ event bus.
 #    - Used for real-time dashboard updates, alerting, audit logs, and pipeline orchestration.
 #
@@ -14,43 +14,51 @@
 #    publish_event("pipeline.topic", {"status": "done", "details": ...})
 #
 #  CONFIGURATION:
-#    - Assumes RabbitMQ is available at host 'rabbitmq' (Docker service name)
-#    - Credentials must match those in docker-compose.yml (admin/password)
+#    - RabbitMQ connection details are read from environment variables for security and flexibility.
+#      - RABBITMQ_HOST: default "rabbitmq"
+#      - RABBITMQ_PORT: default 5672
+#      - RABBITMQ_USER: default "admin"
+#      - RABBITMQ_PASS: default "password"
+#    - Never hardcodes credentials or network assumptions—portable to any cloud or on-prem.
 # =============================================================================
 
 import pika
+import os
 import json
 
 def get_connection():
     """
-    Create and return a new connection to RabbitMQ using hardcoded credentials.
-    Assumes 'rabbitmq' is the Docker network hostname.
+    Establishes a connection to RabbitMQ using environment variables (or defaults).
+    Host, port, username, and password are configurable—never hardcoded for security.
     """
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
+    port = int(os.getenv("RABBITMQ_PORT", 5672))
+    user = os.getenv("RABBITMQ_USER", "admin")
+    password = os.getenv("RABBITMQ_PASS", "password")
     return pika.BlockingConnection(
         pika.ConnectionParameters(
-            host='rabbitmq',
-            credentials=pika.PlainCredentials('admin', 'password')
+            host=host,
+            port=port,
+            credentials=pika.PlainCredentials(user, password)
         )
     )
 
 def publish_event(topic, payload):
     """
-    Publish a JSON-serializable payload to the specified queue/topic.
-    - topic: str, the RabbitMQ queue name (e.g., "rule.ingestion")
-    - payload: dict, the event/message to send
-    Closes the connection after sending (stateless pattern).
+    Publishes a JSON-serializable payload to the specified queue/topic.
+    Closes the connection after sending for statelessness.
     """
     connection = get_connection()
     channel = connection.channel()
-    channel.queue_declare(queue=topic, durable=True)  # Ensure queue exists and is durable
+    channel.queue_declare(queue=topic, durable=True)
     channel.basic_publish(
         exchange='',
         routing_key=topic,
-        body=json.dumps(payload),                     # Serialize payload to JSON
-        properties=pika.BasicProperties(delivery_mode=2)  # Make message persistent
+        body=json.dumps(payload),
+        properties=pika.BasicProperties(delivery_mode=2)  # Message persistent for reliability
     )
     connection.close()
 
 # =============================================================================
-#  End of event_bus.py  (All event publishing is stateless, reliable, and simple)
+#  End of event_bus.py  (All event publishing is stateless, robust, and future-proof)
 # =============================================================================

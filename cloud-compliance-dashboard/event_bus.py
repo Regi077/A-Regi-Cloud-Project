@@ -9,28 +9,34 @@
 #   and relay events into the dashboard backend.
 #
 #   - get_connection(): Helper to establish a connection to RabbitMQ using
-#     universal project credentials.
+#     universal project credentials or environment variables.
 #   - consume_events(): Listen to a specified queue, passing each event to
 #     the given handler function (used by the dashboard for live updates).
 #
 # Notes:
-#   - Connection settings must match those in your docker-compose.yml.
-#   - If RabbitMQ credentials change, update them here.
+#   - Connection settings must match those in your docker-compose.yml or be
+#     set as environment variables (recommended for security/cloud portability).
 #   - Designed for safe and simple event consumption (no publishing here).
 # =============================================================================
 
 import pika
+import os
 import json
 
 def get_connection():
     """
     Establish and return a blocking connection to RabbitMQ.
-    Credentials and host must match those set in docker-compose.yml.
+    Supports robust configuration using environment variables for Azure/AWS/GCP.
     """
+    host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
+    port = int(os.getenv('RABBITMQ_PORT', 5672))
+    user = os.getenv('RABBITMQ_USER', 'admin')
+    password = os.getenv('RABBITMQ_PASS', 'password')
     return pika.BlockingConnection(
         pika.ConnectionParameters(
-            host='rabbitmq',  # Service name from docker-compose
-            credentials=pika.PlainCredentials('admin', 'password')
+            host=host,
+            port=port,
+            credentials=pika.PlainCredentials(user, password)
         )
     )
 
@@ -57,4 +63,8 @@ def consume_events(topic, handler):
             handler(json.loads(body))
             # Acknowledge message so it's removed from the queue
             channel.basic_ack(method_frame.delivery_tag)
-    # (Note: connection is left open for the daemon thread's lifecycle)
+    # Connection remains open for the daemon thread's lifecycle
+
+# =============================================================================
+#  End of event_bus.py (Event consumption for dashboard, robust for all clouds)
+# =============================================================================

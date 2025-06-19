@@ -11,25 +11,30 @@
 #    - Used for real-time updates in the overall compliance platform.
 #
 #  HOW IT WORKS:
-#    - get_connection() establishes a connection to RabbitMQ using the
-#      universal credentials (admin/password, as configured in docker-compose).
+#    - get_connection() establishes a connection to RabbitMQ using robust, env-driven credentials.
 #    - publish_event(topic, payload) sends a durable message to the
 #      specified queue/topic, with the payload serialized as JSON.
 #    - Always closes the connection after publishing to avoid resource leaks.
 # =============================================================================
 
 import pika
+import os
 import json
 
 def get_connection():
     """
-    Establish a connection to the RabbitMQ broker using hardcoded credentials.
-    Note: If credentials change in docker-compose, update here as well.
+    Establish a connection to the RabbitMQ broker using environment variables.
+    Defaults ensure reliability in Docker, Azure, and other cloud CI/CD systems.
     """
+    host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
+    port = int(os.getenv('RABBITMQ_PORT', 5672))
+    user = os.getenv('RABBITMQ_USER', 'admin')
+    password = os.getenv('RABBITMQ_PASS', 'password')
     return pika.BlockingConnection(
         pika.ConnectionParameters(
-            host='rabbitmq',  # The Docker Compose service name (not 'localhost' in container)
-            credentials=pika.PlainCredentials('admin', 'password')
+            host=host,
+            port=port,
+            credentials=pika.PlainCredentials(user, password)
         )
     )
 

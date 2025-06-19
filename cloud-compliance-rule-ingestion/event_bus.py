@@ -9,43 +9,48 @@
 #      other microservices and the dashboard can react to pipeline progress.
 #
 #  HOW IT WORKS:
-#    - get_connection(): Creates a connection to the RabbitMQ broker using the
-#      specified host and credentials (default: admin/password).
+#    - get_connection(): Creates a connection to the RabbitMQ broker using
+#      environment variables (Docker-ready, secure, future-proof).
 #    - publish_event(): Publishes a JSON-serializable payload to a named queue
 #      (topic), with durability (message will survive broker restarts).
 #
 #  USAGE:
 #    - Import and call publish_event("queue_name", {...}) from your pipeline code
+#
+#  CONFIGURATION:
+#    - RABBITMQ_HOST: default "rabbitmq"
+#    - RABBITMQ_PORT: default 5672
+#    - RABBITMQ_USER: default "admin"
+#    - RABBITMQ_PASS: default "password"
 # =============================================================================
 
 import pika
+import os
 import json
 
 def get_connection():
     """
-    Establishes a blocking connection to the RabbitMQ service.
-    Uses 'admin' user and 'password' as set in docker-compose.yml.
+    Establishes a robust blocking connection to RabbitMQ using environment variables.
+    Uses 'rabbitmq' as host (Docker Compose), with admin/password unless overridden.
     """
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
+    port = int(os.getenv("RABBITMQ_PORT", 5672))
+    user = os.getenv("RABBITMQ_USER", "admin")
+    password = os.getenv("RABBITMQ_PASS", "password")
     return pika.BlockingConnection(
         pika.ConnectionParameters(
-            host='rabbitmq',  # Must match the service name in Docker Compose
-            credentials=pika.PlainCredentials('admin', 'password')
+            host=host,
+            port=port,
+            credentials=pika.PlainCredentials(user, password)
         )
     )
 
 def publish_event(topic, payload):
     """
-    Publishes an event to the specified RabbitMQ queue.
-
-    Args:
-        topic (str): The queue/topic to send to (e.g., 'rule.ingestion')
-        payload (dict): A JSON-serializable dictionary (event data)
-
-    Behavior:
-        - Connects to RabbitMQ
-        - Declares the queue durable (persists messages if broker restarts)
-        - Sends the payload as a JSON string
-        - Closes the connection
+    Publishes an event to the specified RabbitMQ queue/topic.
+    - topic (str): The queue/topic to send to (e.g., 'rule.ingestion')
+    - payload (dict): A JSON-serializable dictionary (event data)
+    Ensures durability and reliability for all event-driven integrations.
     """
     connection = get_connection()
     channel = connection.channel()

@@ -9,26 +9,33 @@
 #    - Enables real-time status updates to the dashboard and orchestrates communication between microservices.
 #
 #  HOW IT WORKS:
-#    - `get_connection()` establishes a new connection to RabbitMQ using the service's credentials.
+#    - `get_connection()` establishes a new connection to RabbitMQ using robust, env-driven credentials.
 #    - `publish_event(topic, payload)` serializes the payload to JSON and publishes it to the specified RabbitMQ queue.
 #
 #  USAGE:
 #    - Call `publish_event("iam.pipeline", {...})` after processing requests to send updates downstream.
 #    - Standardizes inter-service communication and real-time dashboard observability.
+#    - Fully Docker, Azure, and cloud-native compatible.
 # =============================================================================
 
 import pika
+import os
 import json
 
 def get_connection():
     """
-    Establish a connection to the RabbitMQ broker running on the 'rabbitmq' service
-    using the universal admin/password credentials.
+    Establish a connection to the RabbitMQ broker using environment variables for config.
+    Defaults ensure robust operation in Docker Compose or cloud VMs.
     """
+    host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
+    port = int(os.getenv('RABBITMQ_PORT', 5672))
+    user = os.getenv('RABBITMQ_USER', 'admin')
+    password = os.getenv('RABBITMQ_PASS', 'password')
     return pika.BlockingConnection(
         pika.ConnectionParameters(
-            host='rabbitmq',  # This matches your docker-compose service name
-            credentials=pika.PlainCredentials('admin', 'password')
+            host=host,
+            port=port,
+            credentials=pika.PlainCredentials(user, password)
         )
     )
 
