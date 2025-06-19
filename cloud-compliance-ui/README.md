@@ -1,7 +1,6 @@
 # Cloud Compliance Tool — Phase 1: Frontend UI (React)
 
-**Author:** Reginald / Team  
-**Last Updated:** 18th June 2025
+**Author:** Reginald
 
 ---
 
@@ -13,7 +12,7 @@ This repository contains the **Frontend UI** for the Cloud Compliance Tool—a m
 
 ---
 
-## 🎯 What Was Achieved (Executive Summary)
+## 🎯 What Was Achieved
 
 - **Role-based Dashboard:**  
   Delivered a fully responsive, role-driven UI that dynamically presents functionality based on user type (Admin, Service Provider, Client).
@@ -24,7 +23,7 @@ This repository contains the **Frontend UI** for the Cloud Compliance Tool—a m
 - **Real-Time Observability:**  
   Live pipeline/agent status updates powered by Socket.IO, giving instant feedback on the progress of backend compliance pipelines.
 
-- **Idiot-Proof Onboarding:**  
+- **Onboarding:**  
   All interactions are designed to be frictionless. Detailed in-app labels, error handling, and clear user feedback make this UI accessible even for non-technical stakeholders.
 
 - **Executive-Ready Foundation:**  
@@ -90,5 +89,25 @@ This repository contains the **Frontend UI** for the Cloud Compliance Tool—a m
 
 **Locally (with Node):**
 ```bash
+
 npm install
 npm run dev         # or: npm run build && npm run preview
+
+📁 Project Structure (Highlights)
+
+cloud-compliance-ui/
+├── src/
+│   ├── components/          # All main UI panels (Upload, Status, Engineering, etc.)
+│   ├── pages/               # Login, Dashboard, App wrapper
+│   └── utils/               # RBAC/user data
+├── Dockerfile               # Multi-stage Docker build
+├── package.json
+├── tailwind.config.cjs
+
+---
+
+## 🚀 Closing
+
+Phase 1 delivered a robust cloud compliance dashboard, providing seamless interaction with backend pipelines and immediate onboarding for all user roles.
+
+---
