@@ -14,7 +14,7 @@
 //    - Textarea for manual pasting of logs or IaC snippets.
 //    - File input for easy drag-and-drop/upload (accepts .yaml, .yml, .tf, .txt).
 //    - Framework dropdown for NIST, PCI, HIPAA, GDPR, etc.
-//    - Idiot-proof error handling: only sends if a file is actually selected.
+//    - error handling: only sends if a file is actually selected.
 //    - Responsive, accessible UI with Tailwind styling.
 //
 //  INTEGRATION NOTES:
