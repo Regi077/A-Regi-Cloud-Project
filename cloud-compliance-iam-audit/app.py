@@ -2,64 +2,92 @@
 #  app.py  --  IAM Role Audit Microservice (Cloud Compliance Pipeline)
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 18th June 2025
+#  Last updated: 20th June 2025
 #
 #  DESCRIPTION:
-#    - This is the main entry point for the IAM audit pipeline.
-#    - Sets up a Flask web application that exposes a single /audit-iam endpoint.
-#    - Receives IAM JSON data, performs a compliance audit, and returns a risk-scored report.
-#    - Publishes results to RabbitMQ so your real-time dashboard receives updates.
+#    - Main entry point for the IAM audit microservice.
+#    - Exposes a single POST /audit-iam endpoint for receiving IAM JSON data.
+#    - Performs compliance audit on IAM roles, users, and policies.
+#    - Returns a detailed risk-scored report as JSON.
+#    - Publishes audit results to RabbitMQ for real-time dashboard updates.
 #
 #  KEY COMPONENTS:
-#    - Flask: lightweight Python web server.
-#    - Flask-CORS: enables cross-origin requests from your UI.
-#    - iam_audit_engine.py: custom logic for evaluating IAM roles, users, and policies.
-#    - event_bus.py: handles event publishing for real-time observability.
+#    - Flask: lightweight Python web framework.
+#    - Flask-CORS: enables cross-origin requests from frontend UI.
+#    - iam_audit_engine.py: custom logic to evaluate IAM compliance.
+#    - event_bus.py: manages publishing events to RabbitMQ.
 #
 #  USAGE:
 #    - POST IAM role/policy JSON data to /audit-iam.
-#    - Receives detailed risk results as JSON.
-#    - Results automatically broadcast to dashboard and UI.
+#    - Receive risk analysis and audit details in response.
+#    - Results automatically broadcast to live dashboard/UI.
 # =============================================================================
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from iam_audit_engine import audit_iam
-from event_bus import publish_event
+from iam_audit_engine import audit_iam        # Custom IAM audit logic
+from event_bus import publish_event           # Event bus for observability
 
+import os
+
+# -----------------------------------------------------------------------------
+# Create uploads directory for any file-based needs (future-proofing)
+# -----------------------------------------------------------------------------
 UPLOAD_DIR = "uploads"
-import os; os.makedirs(UPLOAD_DIR, exist_ok=True)  # Ensure upload directory exists
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# -----------------------------------------------------------------------------
+# Initialize Flask app instance
+# Enable CORS for cross-origin requests from UI frontends
+# -----------------------------------------------------------------------------
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all domains (for UI integration)
+CORS(app)
 
-# -----------------------------------------------------------------------------
-# Endpoint: /audit-iam
-# Accepts: JSON payload with users, groups, and policies
-# Returns: Risk analysis (high/medium/low) and audit issues
-# -----------------------------------------------------------------------------
+@app.route('/')
+def root():
+    """
+    Root health check endpoint.
+    Confirms the IAM audit service is live and reachable.
+    Prevents 404 errors on accessing root URL.
+    """
+    return "IAM Audit service is running", 200
+
 @app.route('/audit-iam', methods=['POST'])
 def audit_iam_endpoint():
+    """
+    POST /audit-iam endpoint:
+    - Accepts IAM JSON data (roles, users, policies) from request body.
+    - Invokes custom audit logic to analyze compliance and risk.
+    - Publishes audit results to RabbitMQ for real-time UI updates.
+    - Returns risk-scored audit report as JSON.
+    """
+    # Parse JSON input payload
     data = request.get_json()
+
+    # Perform IAM audit logic using imported engine
     result = audit_iam(data)
 
-    # Publish this audit result to RabbitMQ for real-time dashboard update
+    # Structure event payload for observability dashboard
     event_payload = {
         "status": "done",
         "pipeline": "iam-audit",
         "audit_result": result
     }
+
+    # Publish event asynchronously to RabbitMQ event bus
     publish_event("iam.pipeline", event_payload)
 
+    # Return audit result to caller as JSON response
     return jsonify(result)
 
 # -----------------------------------------------------------------------------
-# Main Application Entry Point (Docker-ready: host="0.0.0.0")
+# Main entry point for running Flask development server.
+# Binds to 0.0.0.0 for accessibility via Docker port mapping.
+# Debug mode enabled for development; disable in production.
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    # IMPORTANT: Bind to 0.0.0.0 to be reachable via Docker port mapping
     app.run(host="0.0.0.0", port=5040, debug=True)
 
 # =============================================================================
-#  End of app.py (IAM Audit Pipeline, fully event-driven and dashboard-ready)
+#  End of app.py (IAM Audit Pipeline, event-driven and real-time dashboard-ready)
 # =============================================================================

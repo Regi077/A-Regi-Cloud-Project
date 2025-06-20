@@ -2,7 +2,7 @@
 #  app.py  --  Cloud Compliance Framework Validator Microservice
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 18th June 2025
+#  Last updated: 20th June 2025
 #
 #  DESCRIPTION:
 #    - This Flask app receives Infrastructure-as-Code (IaC) files (YAML or Terraform)
@@ -30,44 +30,66 @@ from qdrant_utils import get_rules_from_qdrant       # Loads compliance rules fo
 from validation_utils import validate_iac_against_rules   # Validates IaC against rules
 from event_bus import publish_event                  # Publishes event for dashboard
 
+import os
 UPLOAD_DIR = "uploads"
-import os; os.makedirs(UPLOAD_DIR, exist_ok=True)    # Ensure upload folder exists
+os.makedirs(UPLOAD_DIR, exist_ok=True)    # Ensure upload folder exists
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for cross-origin frontend access
 
-# -----------------------------------------------------------------------
-# POST /validate-framework
-# Receives an IaC file and framework name; validates config against rules
-# -----------------------------------------------------------------------
+@app.route('/')
+def root():
+    """
+    Root route for health check.
+    Returns a simple confirmation message to confirm the
+    framework-validation service is alive and reachable.
+    """
+    return "Framework Validator service is running", 200
+
 @app.route('/validate-framework', methods=['POST'])
 def validate_framework():
-    # --- Step 1: Receive IaC (YAML/Terraform) and framework ---
-    iac_file = request.files["iac"]
-    iac_content = iac_file.read().decode("utf-8")
-    framework = request.form["framework"]
+    """
+    POST /validate-framework
+    Receives an IaC file and framework name; validates the IaC content
+    against loaded compliance rules, publishes the results as events,
+    and returns the validation report.
+    """
+    try:
+        # Step 1: Receive IaC (YAML/Terraform) and framework
+        iac_file = request.files["iac"]
+        iac_content = iac_file.read().decode("utf-8")
+        framework = request.form["framework"]
 
-    # --- Step 2: Load rules from Qdrant (vector DB) ---
-    rules = get_rules_from_qdrant(framework)
+        # Step 2: Load compliance rules from Qdrant vector DB
+        rules = get_rules_from_qdrant(framework)
 
-    # --- Step 3: Validate IaC against compliance rules ---
-    validation_result = validate_iac_against_rules(iac_content, rules)
+        # Step 3: Validate IaC content against compliance rules
+        validation_result = validate_iac_against_rules(iac_content, rules)
 
-    # --- Step 4: Publish validation event to RabbitMQ for live dashboard updates ---
-    event_payload = {
-        "status": "done",
-        "pipeline": "framework-validator",
-        "framework": framework,
-        "validation_result": validation_result
-    }
-    publish_event("validation.pipeline", event_payload)
+        # Step 4: Publish validation event to RabbitMQ for real-time dashboard update
+        event_payload = {
+            "status": "done",
+            "pipeline": "framework-validator",
+            "framework": framework,
+            "validation_result": validation_result
+        }
+        publish_event("validation.pipeline", event_payload)
 
-    # --- Step 5: Return validation result to client (UI/API Gateway) ---
-    return jsonify(validation_result)
+        # Step 5: Return validation results as JSON to client
+        return jsonify(validation_result)
 
-# -----------------------------------------------------------------------
-# Entry point: runs the Flask server on port 5020 in debug mode.
-# -----------------------------------------------------------------------
+    except Exception as e:
+        # Log error and return 500 with error details
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    """
+    Handler for 405 Method Not Allowed errors.
+    Returns a JSON response explaining allowed methods.
+    """
+    return jsonify({"error": "Method not allowed", "message": str(e)}), 405
+
 if __name__ == "__main__":
     # CRITICAL FIX: bind to host="0.0.0.0" so Docker port mapping works!
     app.run(host="0.0.0.0", port=5020, debug=True)

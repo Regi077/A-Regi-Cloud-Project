@@ -13,7 +13,7 @@
 #    - All sensitive/secret config (API keys, DB URIs) should be managed with env vars or secrets, not hardcoded.
 #
 #  Author: Reginald
-#  Last updated: 18th June 2025
+#  Last updated: 20th June 2025
 # =============================================================================
 
 from flask import Flask, request, jsonify
@@ -23,7 +23,7 @@ from flask_limiter.util import get_remote_address
 from endpoints import api   # Custom blueprint for business logic endpoints
 
 from event_bus import publish_event
-import datetime
+from datetime import datetime, timezone  # Updated for timezone-aware datetime
 
 # -----------------------------------------------------------------------------
 # App Initialization
@@ -54,7 +54,8 @@ def audit_event(topic, action, user=None, extra=None):
     All major actions (user login/logout, API errors, key requests) are tracked.
     """
     payload = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        # Use timezone-aware datetime to avoid deprecation warnings
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "action": action,
         "user": user,
         "extra": extra or {}
@@ -87,6 +88,18 @@ def logout():
     # TODO: Insert your actual logout/session invalidation logic here!
     audit_event("user.activity", "logout", user=username)
     return jsonify({"success": True})
+
+# -----------------------------------------------------------------------------
+# API Endpoint: Health Check (Root Path)
+# -----------------------------------------------------------------------------
+@app.route('/')
+def root():
+    """
+    Root health check endpoint.
+    Simple confirmation the API gateway service is live.
+    """
+    audit_event("system.health", "api_gateway_health_check", extra={"status": "OK"})
+    return jsonify({"status": "Cloud Compliance API Gateway is running"}), 200
 
 # -----------------------------------------------------------------------------
 # API Endpoint: Health Check
