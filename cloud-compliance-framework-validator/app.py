@@ -2,7 +2,7 @@
 #  app.py  --  Cloud Compliance Framework Validator Microservice
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 20th June 2025
+#  Last updated: 21st June 2025
 #
 #  DESCRIPTION:
 #    - This Flask app receives Infrastructure-as-Code (IaC) files (YAML or Terraform)
@@ -24,7 +24,7 @@
 #    - Add new events or outputs as needed for more detailed dashboarding.
 # =============================================================================
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory  # Added send_from_directory for favicon
 from flask_cors import CORS
 from qdrant_utils import get_rules_from_qdrant       # Loads compliance rules for framework
 from validation_utils import validate_iac_against_rules   # Validates IaC against rules
@@ -36,6 +36,20 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)    # Ensure upload folder exists
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for cross-origin frontend access
+
+# -----------------------------------------------------------------------------
+# Serve favicon.ico from /static to prevent browser 404 noise
+# -----------------------------------------------------------------------------
+@app.route('/favicon.ico')
+def favicon():
+    """
+    Serves favicon.ico from the static directory to eliminate 404s in browser tabs/logs.
+    """
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )
 
 @app.route('/')
 def root():

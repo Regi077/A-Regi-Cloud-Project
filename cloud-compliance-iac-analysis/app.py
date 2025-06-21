@@ -2,7 +2,7 @@
 #  app.py  --  IaC Analysis & Remediation Microservice (Cloud Compliance Tool)
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 20th June 2025
+#  Last updated: 21st June 2025
 #
 #  DESCRIPTION:
 #    - Flask microservice for analyzing Infrastructure as Code (IaC) files
@@ -20,7 +20,7 @@
 #    - Publishes "remediation.pipeline" events for live UI feedback.
 # =============================================================================
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory  # Added send_from_directory for favicon
 from flask_cors import CORS
 from remediation_engine import analyze_and_remediate        # Core analysis logic
 from event_bus import publish_event                          # Event publishing to RabbitMQ
@@ -34,12 +34,22 @@ import os
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# -----------------------------------------------------------------------------
-# Initialize Flask application instance
-# Enable CORS to allow cross-origin frontend access for API calls
-# -----------------------------------------------------------------------------
 app = Flask(__name__)
 CORS(app)
+
+# -----------------------------------------------------------------------------
+# Favicon Handler (Prevents 404 spam in browser tabs and logs)
+# -----------------------------------------------------------------------------
+@app.route('/favicon.ico')
+def favicon():
+    """
+    Serves favicon.ico from the static directory for browser and UI requests.
+    """
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )
 
 @app.route('/')
 def root():

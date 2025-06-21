@@ -2,7 +2,7 @@
 #  app.py  --  IAM Role Audit Microservice (Cloud Compliance Pipeline)
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 20th June 2025
+#  Last updated: 21st June 2025
 #
 #  DESCRIPTION:
 #    - Main entry point for the IAM audit microservice.
@@ -23,7 +23,7 @@
 #    - Results automatically broadcast to live dashboard/UI.
 # =============================================================================
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory  # Add send_from_directory
 from flask_cors import CORS
 from iam_audit_engine import audit_iam        # Custom IAM audit logic
 from event_bus import publish_event           # Event bus for observability
@@ -42,6 +42,20 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # -----------------------------------------------------------------------------
 app = Flask(__name__)
 CORS(app)
+
+# -----------------------------------------------------------------------------
+# Serve favicon.ico from /static to prevent browser 404 noise
+# -----------------------------------------------------------------------------
+@app.route('/favicon.ico')
+def favicon():
+    """
+    Serves favicon.ico from the static directory to eliminate 404s in browser tabs/logs.
+    """
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )
 
 @app.route('/')
 def root():

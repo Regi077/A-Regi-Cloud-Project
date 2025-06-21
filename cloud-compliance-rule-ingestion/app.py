@@ -2,7 +2,7 @@
 #  app.py  --  Cloud Compliance Rule Ingestion Microservice
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 20th June 2025
+#  Last updated: 21st June 2025
 #
 #  DESCRIPTION:
 #    - Entry point for the Rule Ingestion microservice.
@@ -25,7 +25,7 @@
 #    6. Publish result as an event to RabbitMQ ("rule.ingestion" topic).
 # =============================================================================
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory  # Added send_from_directory for favicon
 from flask_cors import CORS
 import os
 from parse_utils import parse_doc_to_chunks, extract_rules_with_llm, save_json
@@ -41,6 +41,21 @@ os.makedirs(PARSED_DIR, exist_ok=True)
 # --- Initialize Flask app and enable CORS for cross-origin requests ---
 app = Flask(__name__)
 CORS(app)
+
+# -----------------------------------------------------------------------------
+# Serve favicon.ico from /static to eliminate browser 404 log spam
+# -----------------------------------------------------------------------------
+@app.route('/favicon.ico')
+def favicon():
+    """
+    Serves the favicon.ico file from the static directory.
+    Prevents browser tab 404s and log noise for missing favicon.
+    """
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )
 
 @app.route('/')
 def root():

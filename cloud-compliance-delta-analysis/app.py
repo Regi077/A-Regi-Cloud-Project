@@ -2,7 +2,7 @@
 #  app.py  --  Cloud Compliance Delta Analysis Service
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 20th June 2025
+#  Last updated: 21st June 2025
 #
 #  DESCRIPTION:
 #    - Provides API endpoints to compare pre- and post-remediation JSONs and
@@ -24,7 +24,7 @@
 #    - Publishes every /compare result as an event on the 'delta.pipeline' RabbitMQ topic.
 # =============================================================================
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from delta_utils import compare_jsons        # Custom diff computation logic
 import os
@@ -38,6 +38,21 @@ from event_bus import publish_event          # For publishing to RabbitMQ
 app = Flask(__name__)
 CORS(app)
 os.makedirs("reports", exist_ok=True)
+
+# -----------------------------------------------------------------------------
+# Favicon handler for browser requests (prevents 404 log spam)
+# -----------------------------------------------------------------------------
+@app.route('/favicon.ico')
+def favicon():
+    """
+    Serves favicon.ico from static directory for browser requests.
+    Prevents repetitive 404s in logs and browser devtools.
+    """
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )
 
 @app.route('/')
 def root():
