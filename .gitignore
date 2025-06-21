@@ -1,4 +1,19 @@
- .venv/
- __pycache__/
- *.pyc
- *.pyo
+# Ignore Ollama models and data (prevents model files from being pushed)
+ollama-data/
+
+# Python virtual environments and caches
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variable files (commonly used for secrets)
+.env
+
+# Log files (prevents clutter)
+*.log
+
+# Node.js, React, Vite, and other JS build artifacts (future-proofing)
+node_modules/
+dist/
+build/
