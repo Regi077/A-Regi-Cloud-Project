@@ -13,10 +13,10 @@
 #    - All sensitive/secret config (API keys, DB URIs) should be managed with env vars or secrets, not hardcoded.
 #
 #  Author: Reginald
-#  Last updated: 20th June 2025
+#  Last updated: 21st June 2025
 # =============================================================================
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory  # Added send_from_directory for favicon
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -24,6 +24,7 @@ from endpoints import api   # Custom blueprint for business logic endpoints
 
 from event_bus import publish_event
 from datetime import datetime, timezone  # Updated for timezone-aware datetime
+import os  # For static path handling
 
 # -----------------------------------------------------------------------------
 # App Initialization
@@ -61,6 +62,21 @@ def audit_event(topic, action, user=None, extra=None):
         "extra": extra or {}
     }
     publish_event(topic, payload)
+
+# -----------------------------------------------------------------------------
+# Favicon Route: Serve /favicon.ico to Prevent Browser 404
+# -----------------------------------------------------------------------------
+@app.route('/favicon.ico')
+def favicon():
+    """
+    Serves the favicon.ico file from the static directory.
+    Prevents 404 errors in browser tab and access logs.
+    """
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )
 
 # -----------------------------------------------------------------------------
 # API Endpoints: User Session (Login/Logout)
