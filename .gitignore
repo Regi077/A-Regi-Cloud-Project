@@ -1,5 +1,14 @@
+# =======================
+# Cloud Compliance Project .gitignore
+# =======================
+
 # Ignore Ollama models and data (prevents model files from being pushed)
 ollama-data/
+ollama/
+models/
+*.bin
+*.pt
+*.ckpt
 
 # Python virtual environments and caches
 .venv/
