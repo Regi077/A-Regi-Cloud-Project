@@ -2,7 +2,7 @@
 #  docker-compose.yml  --  Cloud Compliance Platform: Microservices Orchestration
 # ==============================================================================
 #  Author: Reginald
-#  Last updated: 18th June 2025
+#  Last updated: 20th June 2025
 #
 #  DESCRIPTION:
 #    - Defines the complete multi-stage, event-driven cloud compliance pipeline.
@@ -13,7 +13,7 @@
 #  HOW TO USE:
 #    - Place this file at the root level alongside all pipeline directories.
 #    - Bring up the stack:   docker compose up --build
-#    - Tear down and remove:  docker compose down
+#    - Tear down and remove:  docker compose down -v
 #    - RabbitMQ admin:        http://localhost:15672  (admin/password)
 #    - React UI:              http://localhost:3000
 # ==============================================================================
@@ -21,21 +21,21 @@
 services:
   # === Phase 1: Frontend UI (React, Vite) ===
   compliance-ui:
-    build: ./cloud-compliance-ui           # Folder containing your UI code and Dockerfile
+    build: ./cloud-compliance-ui    # Folder containing your UI code and Dockerfile
     ports:
-      - "3000:3000"                        # Expose React dev server on host port 3000
-      - "4173:4173"                        # for preview
+      - "3000:3000"        # React development server
+      - "4173:4173"        # React preview server (optional)
     depends_on:
-      - cloud-compliance-api               # UI should only start after backend API is ready
+      - cloud-compliance-api        # UI should only start after backend API is ready
 
-   # === Phase 2: API Gateway / MCP Layer (Flask) ===
+  # === Phase 2: API Gateway / MCP Layer (Flask) ===
   cloud-compliance-api:
-    build: ./cloud-compliance-api          # Your main backend API folder/Dockerfile
+    build: ./cloud-compliance-api   # Your main backend API folder/Dockerfile
     ports:
-      - "5000:5000"                        # Expose Flask API on host port 5000
+      - "5000:5000"                 # Expose Flask API on host port 5000
     depends_on:
-      - rule-ingestion                     # API depends on rule ingestion
-      - rabbitmq                           # and on RabbitMQ for event-driven comms
+      - rule-ingestion               # API depends on rule ingestion
+      - rabbitmq                    # and on RabbitMQ for event-driven comms
       - ollama
       - qdrant
     environment:
@@ -50,9 +50,9 @@ services:
   rule-ingestion:
     build: ./cloud-compliance-rule-ingestion
     ports:
-      - "5010:5010"                        # Rule ingestion microservice, port 5010
+      - "5010:5010"                         # Rule ingestion microservice, port 5010
     depends_on:
-      - rabbitmq                           # Wait for RabbitMQ before starting
+      - rabbitmq                     # Wait for RabbitMQ before starting
       - ollama
       - qdrant
     environment:
@@ -67,9 +67,9 @@ services:
   framework-validation:
     build: ./cloud-compliance-framework-validator
     ports:
-      - "5020:5020"                        # Framework validator microservice, port 5020
+      - "5020:5020"                            # Framework validator microservice, port 5020
     depends_on:
-      - rabbitmq                           # Wait for RabbitMQ before starting
+      - rabbitmq                          # Wait for RabbitMQ before starting
       - qdrant
     environment:
       - QDRANT_URL=http://qdrant:6333
@@ -82,9 +82,9 @@ services:
   iac-analysis:
     build: ./cloud-compliance-iac-analysis
     ports:
-      - "5030:5030"                        # IaC analysis/remediation, port 5030
+      - "5030:5030"
     depends_on:
-      - rabbitmq                           # Wait for RabbitMQ before starting
+      - rabbitmq
       - qdrant
     environment:
       - QDRANT_URL=http://qdrant:6333
@@ -97,9 +97,9 @@ services:
   iam-audit:
     build: ./cloud-compliance-iam-audit
     ports:
-      - "5040:5040"                        # IAM auditing, port 5040
+      - "5040:5040"
     depends_on:
-      - rabbitmq                           # Wait for RabbitMQ before starting
+      - rabbitmq
     environment:
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -110,11 +110,11 @@ services:
   delta-analysis:
     build: ./cloud-compliance-delta-analysis
     ports:
-      - "5050:5050"                        # Delta reporting, port 5050
+      - "5050:5050"
     volumes:
-      - ./cloud-compliance-delta-analysis/reports:/app/reports  # PDF exports persist on host
+      - ./cloud-compliance-delta-analysis/reports:/app/reports  # Persist PDF reports outside container
     depends_on:
-      - rabbitmq                           # Wait for RabbitMQ before starting
+      - rabbitmq
     environment:
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
@@ -125,47 +125,52 @@ services:
   qdrant:
     image: qdrant/qdrant
     ports:
-      - "6333:6333"                        # Vector DB for LLM embeddings (Qdrant default port)
+      - "6333:6333"                   # Vector DB for LLM embeddings (Qdrant default port)
 
   # === Ollama: Local LLM for rule extraction & reasoning ===
   ollama:
     image: ollama/ollama
     ports:
-      - "11434:11434"                      # Ollama model server
+      - "11434:11434"                 # Ollama model server
+    volumes:
+      # Persist Ollama's models and SSH keys outside the container to host directory for
+      # model visibility and persistence across container restarts.
+      - ./ollama-data:/root/.ollama
+    # Optional: add restart policy for resilience
+    restart: unless-stopped
 
   # === RabbitMQ: Event Bus for real-time pipeline coordination ===
   rabbitmq:
     image: rabbitmq:4.1.1-management-alpine
     ports:
-      - "5672:5672"                        # RabbitMQ broker port (used by your pipelines)
-      - "15672:15672"                      # RabbitMQ management UI (http://localhost:15672)
+      - "5672:5672"     # Broker port for microservices
+      - "15672:15672"   # Management UI port (http://localhost:15672)
     environment:
-      RABBITMQ_DEFAULT_USER: admin         # Universal credentials for all microservices
+      RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: password
 
-  # === Phase 8: Dashboard Backend (Flask + SocketIO + RabbitMQ integration) ===
+  # === Phase 8: Dashboard Backend (Flask + SocketIO + RabbitMQ) ===
   cloud-compliance-dashboard:
     build: ./cloud-compliance-dashboard
     ports:
-      - "5001:5000"                        # Dashboard backend, port 5001 (mapped to container 5000)
+      - "5001:5000"    # Map host 5001 to container 5000
     depends_on:
-      - rabbitmq                           # Wait for RabbitMQ before starting
+      - rabbitmq
     environment:
-      - FLASK_ENV=development              # Flask development mode (change for prod)
+      - FLASK_ENV=development
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=admin
       - RABBITMQ_PASS=password
 
+# ==============================================================================
+# NOTES:
+# - All microservices that publish/consume events depend on RabbitMQ.
+# - Use 'docker compose up --build' for clean builds.
+# - Ensure the build paths (./cloud-compliance-*) exist relative to this file.
+# - Ollama volume './ollama-data:/root/.ollama' must be created on the host for model persistence.
+# - Secure credentials and ports before production deployment.
+# - Add healthchecks for critical services in production.
+# - All service names resolve in Docker's internal network.
+# ==============================================================================
 
-# ==============================================================================
-#  NOTES:
-#    - All microservices that publish/consume events wait for RabbitMQ.
-#    - Use 'docker compose up --build' for clean initial builds.
-#    - Each build context path (./cloud-compliance-*) must exist at root.
-#    - Persistent volumes (e.g., delta-analysis reports) mounted for export.
-#    - For production, review exposed ports and secure credentials.
-#    - Add new microservices by copying the established pattern (build/ports/depends_on).
-#    - Healthchecks can be added for critical uptime assurance.
-#    - All services are addressable by their service name in Docker's internal DNS.
-# ==============================================================================

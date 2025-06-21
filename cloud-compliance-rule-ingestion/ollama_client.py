@@ -2,7 +2,7 @@
 #  ollama_client.py  --  LLM Query Utility for Rule Extraction
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 20th June 2025
+#  Last updated: 21st June 2025
 #
 #  PURPOSE:
 #    - Provides a simple interface to interact with the Ollama LLM API,
@@ -15,17 +15,17 @@
 #
 #  CONFIGURATION:
 #    - OLLAMA_URL can be set via environment variable for Docker/host/Cloud.
-#      - Defaults to "http://ollama:11434/generate" (updated endpoint for Ollama API)
-#      - For host/native, set OLLAMA_URL="http://host.docker.internal:11434/generate"
+#      - Defaults to "http://ollama:11434/api/generate" (correct endpoint for Ollama Docker API)
+#      - For host/native, set OLLAMA_URL="http://host.docker.internal:11434/api/generate"
 # =============================================================================
 
 import requests
 import os
 
 # Base URL for Ollama API endpoint.
-# Updated from '/api/generate' to '/generate' per Ollama API documentation and 404 fix.
+# Use '/api/generate' as required by current Ollama Docker API (v0.9.2+)
 OLLAMA_URL = os.getenv(
-    "OLLAMA_URL", "http://ollama:11434/generate"
+    "OLLAMA_URL", "http://ollama:11434/api/generate"
 )  #: Use Docker Compose service name by default
 
 def query_ollama(prompt):
@@ -50,13 +50,13 @@ def query_ollama(prompt):
         "stream": False,               # Set to False for full (non-streaming) response
         "temperature": 0.1             # Low temperature for deterministic output
     }
-    
+
     # Make POST request to Ollama API endpoint
     resp = requests.post(OLLAMA_URL, json=data)
-    
+
     # Raise exception for HTTP error codes (4xx, 5xx)
     resp.raise_for_status()
-    
+
     # Extract the 'response' field from JSON payload, return empty string if missing
     return resp.json().get("response", "")
 
