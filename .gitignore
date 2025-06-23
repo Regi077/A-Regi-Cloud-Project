@@ -1,5 +1,8 @@
 # =======================
-# Cloud Compliance Project .gitignore
+# Cloud Compliance Project .gitignore 
+# Prevent unnecessary files from being tracked by Git
+# and facing the challenge of uploading large files to GitHub as experienced
+# in the Ollama project.
 # =======================
 
 # Ignore Ollama models and data (prevents model files from being pushed)
