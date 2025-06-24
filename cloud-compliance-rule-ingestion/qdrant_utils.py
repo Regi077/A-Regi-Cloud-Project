@@ -40,6 +40,13 @@ def upsert_rules_to_qdrant(rules):
     Returns:
         str: "upserted" if points were written, "no points" if rules was empty.
     """
+    # -------------------------------------------------------------------------
+    # Defensive: Warn and exit if input is empty (added for better pipeline visibility)
+    # -------------------------------------------------------------------------
+    if not rules:
+        print("[QDRANT] No rules to upsert. Check earlier pipeline steps!")
+        return "no points"
+
     client = QdrantClient(url=QDRANT_URL)
     # Ensure collection exists (creates if not)
     try:
@@ -60,11 +67,8 @@ def upsert_rules_to_qdrant(rules):
         })
 
     # Upsert all points into Qdrant collection
-    if points:
-        client.upsert(collection_name=COLLECTION, points=points)
-        return "upserted"
-    else:
-        return "no points"
+    client.upsert(collection_name=COLLECTION, points=points)
+    return "upserted"
 
 # =============================================================================
 #  End of qdrant_utils.py (Handles upserting rules to vector DB)

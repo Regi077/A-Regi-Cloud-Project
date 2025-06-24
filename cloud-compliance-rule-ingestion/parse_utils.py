@@ -2,7 +2,7 @@
 #  parse_utils.py  --  Compliance Document Parsing & LLM Rule Extraction Utility
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 24th June 2025 (prompt and output normalization improvements)
+#  Last updated: 24th June 2025 (prompt and LLM output normalization improvements)
 #
 #  DESCRIPTION:
 #    - Handles document reading (PDF or text), chunking, LLM-based extraction,
@@ -58,7 +58,7 @@ def parse_doc_to_chunks(filepath, chunk_size=700):
 def extract_rules_with_llm(chunks):
     """
     Uses the Ollama LLM to extract compliance rules from each text chunk.
-    Robust prompt engineering, output cleanup, and raw output logging.
+    Robust prompt engineering, output cleanup, and full normalization logic.
 
     Args:
         chunks (list[str]): Chunks of text from the document.
@@ -67,10 +67,9 @@ def extract_rules_with_llm(chunks):
         list[dict]: Aggregated list of all extracted rules (as Python dicts).
 
     Note:
-        - Handles common LLM issues: markdown code block wrappers, "json" hints.
+        - Handles all common LLM issues: markdown code block wrappers, "json" hints, dict/list/string responses.
         - Logs every LLM output for transparency and troubleshooting.
-        - Handles (and skips) chunks that produce invalid JSON.
-        - Ensures only dictionaries are returned (fixes Qdrant upsert errors).
+        - Ensures output is always a list of dicts, no matter how LLM responds.
     """
     all_rules = []
     for chunk in chunks:
@@ -78,7 +77,8 @@ def extract_rules_with_llm(chunks):
         prompt = (
             "Extract all compliance rules from the following text. "
             "Respond ONLY with a JSON array of objects. Each object must be a rule in the format: "
-            '[{"rule": "..."}]. Do NOT return a list of strings or commentary.\n\n'
+            '[{"rule": "..."}]. If there is only one rule, still return as an array of objects. '
+            "Do NOT return a list of strings or commentary.\n\n"
             f"Text:\n{chunk}"
         )
         response = query_ollama(prompt)
@@ -97,16 +97,28 @@ def extract_rules_with_llm(chunks):
             cleaned = cleaned[4:].strip()
         cleaned = cleaned.strip("`").strip()
 
+        # --- LLM Output Normalization Logic (Handles all possible formats) ---
         try:
-            rules = json.loads(cleaned)
+            parsed = json.loads(cleaned)
+            rules_list = []
 
-            # --- Handle {"rules": [...]} wrapper as fallback ---
-            if isinstance(rules, dict) and "rules" in rules:
-                rules = rules["rules"]
+            # CASE 1: List of dicts (ideal format)
+            if isinstance(parsed, list):
+                rules_list = [r for r in parsed if isinstance(r, dict) and r]
+            # CASE 2: Dict with "rules" key ({"rules": [...]})
+            elif isinstance(parsed, dict) and "rules" in parsed and isinstance(parsed["rules"], list):
+                rules_list = [r for r in parsed["rules"] if isinstance(r, dict) and r]
+            # CASE 3: Dict with "rule" key (single rule as dict)
+            elif isinstance(parsed, dict) and "rule" in parsed:
+                rules_list = [parsed]
+            # CASE 4: String response (very rare, last fallback)
+            elif isinstance(parsed, str):
+                rules_list = [{"rule": parsed}]
+            # ELSE: Unknown structure, print for debug
+            else:
+                print("LLM output not recognized, skipping:", parsed)
 
-            # Only keep dicts (objects) as valid rules
-            filtered = [rule for rule in rules if isinstance(rule, dict)]
-            all_rules.extend(filtered)
+            all_rules.extend(rules_list)
 
         except Exception as e:
             print("JSON parsing failed for chunk:", e)
