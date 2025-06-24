@@ -2,7 +2,7 @@
 #  event_bus.py  --  Event Publishing Utilities for RabbitMQ for Cloud Compliance Rule Ingestion
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 18th June 2025
+#  Last updated: 24th June 2025 (error handling, safe cleanup)
 #
 #  PURPOSE:
 #    - Provides functions for publishing events to RabbitMQ so that
@@ -49,8 +49,8 @@ def get_connection():
                     credentials=pika.PlainCredentials(user, password)
                 )
             )
-        except pika.exceptions.AMQPConnectionError:
-            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10")
+        except pika.exceptions.AMQPConnectionError as e:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10. Error: {e}")
             time.sleep(5)
     raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
@@ -61,16 +61,27 @@ def publish_event(topic, payload):
     - payload (dict): A JSON-serializable dictionary (event data)
     Ensures durability and reliability for all event-driven integrations.
     """
-    connection = get_connection()
-    channel = connection.channel()
-    channel.queue_declare(queue=topic, durable=True)
-    channel.basic_publish(
-        exchange='',
-        routing_key=topic,
-        body=json.dumps(payload),
-        properties=pika.BasicProperties(delivery_mode=2)  # Persistent message
-    )
-    connection.close()
+    connection = None
+    try:
+        connection = get_connection()
+        channel = connection.channel()
+        channel.queue_declare(queue=topic, durable=True)
+        channel.basic_publish(
+            exchange='',
+            routing_key=topic,
+            body=json.dumps(payload),
+            properties=pika.BasicProperties(delivery_mode=2)  # Persistent message
+        )
+        print(f"[event_bus.py] Published event to '{topic}': {payload}")
+    except Exception as e:
+        print(f"[event_bus.py] Failed to publish event to '{topic}': {e}")
+        raise
+    finally:
+        if connection:
+            try:
+                connection.close()
+            except Exception as e:
+                print(f"[event_bus.py] Error closing RabbitMQ connection: {e}")
 
 # =============================================================================
 #  End of event_bus.py (RabbitMQ event utility functions)

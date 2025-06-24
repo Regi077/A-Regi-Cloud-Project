@@ -26,14 +26,15 @@ import time
 
 def get_connection():
     """
-    Establish a connection to the RabbitMQ broker using environment variables for config.
-    Adds retry logic for startup race conditions (waits until RabbitMQ is ready).
-    Defaults ensure robust operation in Docker Compose or cloud VMs.
+    Establishes a robust blocking connection to RabbitMQ using environment variables,
+    with retry logic to avoid service startup race conditions.
+    Uses 'rabbitmq' as host (Docker Compose), with admin/password unless overridden.
     """
-    host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
-    port = int(os.getenv('RABBITMQ_PORT', 5672))
-    user = os.getenv('RABBITMQ_USER', 'admin')
-    password = os.getenv('RABBITMQ_PASS', 'password')
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
+    port = int(os.getenv("RABBITMQ_PORT", 5672))
+    user = os.getenv("RABBITMQ_USER", "admin")
+    password = os.getenv("RABBITMQ_PASS", "password")
+
     for attempt in range(10):
         try:
             return pika.BlockingConnection(
@@ -43,26 +44,39 @@ def get_connection():
                     credentials=pika.PlainCredentials(user, password)
                 )
             )
-        except pika.exceptions.AMQPConnectionError:
-            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt+1}/10")
+        except pika.exceptions.AMQPConnectionError as e:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10. Error: {e}")
             time.sleep(5)
     raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
 def publish_event(topic, payload):
     """
-    Publishes a JSON-serialized payload to the specified RabbitMQ queue (topic).
-    Marks messages as durable for reliability. Call this after each key operation.
+    Publishes an event to the specified RabbitMQ queue/topic.
+    - topic (str): The queue/topic to send to (e.g., 'rule.ingestion')
+    - payload (dict): A JSON-serializable dictionary (event data)
+    Ensures durability and reliability for all event-driven integrations.
     """
-    connection = get_connection()
-    channel = connection.channel()
-    channel.queue_declare(queue=topic, durable=True)  # Durable queue for persistence
-    channel.basic_publish(
-        exchange='',
-        routing_key=topic,
-        body=json.dumps(payload),
-        properties=pika.BasicProperties(delivery_mode=2)  # Make messages persistent
-    )
-    connection.close()
+    connection = None
+    try:
+        connection = get_connection()
+        channel = connection.channel()
+        channel.queue_declare(queue=topic, durable=True)
+        channel.basic_publish(
+            exchange='',
+            routing_key=topic,
+            body=json.dumps(payload),
+            properties=pika.BasicProperties(delivery_mode=2)  # Persistent message
+        )
+        print(f"[event_bus.py] Published event to '{topic}': {payload}")
+    except Exception as e:
+        print(f"[event_bus.py] Failed to publish event to '{topic}': {e}")
+        raise
+    finally:
+        if connection:
+            try:
+                connection.close()
+            except Exception as e:
+                print(f"[event_bus.py] Error closing RabbitMQ connection: {e}")
 
 # =============================================================================
 #  End of event_bus.py (Plug-and-play RabbitMQ integration for pipeline events)

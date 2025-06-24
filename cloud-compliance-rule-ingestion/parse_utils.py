@@ -70,6 +70,7 @@ def extract_rules_with_llm(chunks):
         - The prompt requests a strict JSON list of rules, nothing else.
         - Logs every LLM output for transparency and troubleshooting.
         - Handles (and skips) chunks that produce invalid JSON.
+        - Ensures only dictionaries are returned (fixes Qdrant upsert errors).
     """
     all_rules = []
     for chunk in chunks:
@@ -85,7 +86,16 @@ def extract_rules_with_llm(chunks):
         print("LLM raw output:", repr(response))
         try:
             rules = json.loads(response)
-            all_rules.extend(rules)
+
+            # --- ADDED: Normalize rules: Only allow dicts ---
+            if isinstance(rules, dict) and "rules" in rules:
+                # Sometimes LLM responds with {"rules": [...]}
+                rules = rules["rules"]
+
+            # Defensive: Only add dicts (ignore strings or bad formats)
+            filtered = [rule for rule in rules if isinstance(rule, dict)]
+            all_rules.extend(filtered)
+
         except Exception as e:
             print("JSON parsing failed for chunk:", e)
             # If response is not valid JSON, skip this chunk

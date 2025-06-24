@@ -2,7 +2,7 @@
 #  ollama_client.py  --  LLM Query Utility for Rule Extraction
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 21st June 2025
+#  Last updated: 24th June 2025  (robust error handling, validation)
 #
 #  PURPOSE:
 #    - Provides a simple interface to interact with the Ollama LLM API,
@@ -15,18 +15,15 @@
 #
 #  CONFIGURATION:
 #    - OLLAMA_URL can be set via environment variable for Docker/host/Cloud.
-#      - Defaults to "http://ollama:11434/api/generate" (correct endpoint for Ollama Docker API)
+#      - Defaults to "http://ollama:11434/api/generate" (Ollama Docker API)
 #      - For host/native, set OLLAMA_URL="http://host.docker.internal:11434/api/generate"
 # =============================================================================
 
 import requests
 import os
 
-# Base URL for Ollama API endpoint.
-# Use '/api/generate' as required by current Ollama Docker API (v0.9.2+)
-OLLAMA_URL = os.getenv(
-    "OLLAMA_URL", "http://ollama:11434/api/generate"
-)  #: Use Docker Compose service name by default
+# Base URL for Ollama API endpoint (Docker Compose service name by default)
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api/generate")
 
 def query_ollama(prompt):
     """
@@ -39,7 +36,7 @@ def query_ollama(prompt):
         str: The LLM's textual response (usually JSON-formatted compliance rules).
 
     Raises:
-        requests.HTTPError: If the Ollama API is unreachable or returns an error.
+        RuntimeError: For API connection, HTTP, or JSON errors.
 
     Usage:
         rules_json = query_ollama("Extract all NIST security requirements...")
@@ -51,14 +48,29 @@ def query_ollama(prompt):
         "temperature": 0.1             # Low temperature for deterministic output
     }
 
-    # Make POST request to Ollama API endpoint
-    resp = requests.post(OLLAMA_URL, json=data)
+    try:
+        resp = requests.post(OLLAMA_URL, json=data, timeout=120)
+        resp.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        # Log detailed network or HTTP errors
+        print("[ERROR] Ollama API connection/request failed:", e)
+        raise RuntimeError(f"Ollama API request failed: {e}")
 
-    # Raise exception for HTTP error codes (4xx, 5xx)
-    resp.raise_for_status()
+    # Try to parse JSON and validate structure
+    try:
+        resp_json = resp.json()
+    except Exception as e:
+        print("[ERROR] Ollama API returned invalid JSON:", e)
+        print("Raw response:", resp.text)
+        raise RuntimeError(f"Ollama API did not return valid JSON: {e}")
 
-    # Extract the 'response' field from JSON payload, return empty string if missing
-    return resp.json().get("response", "")
+    if "response" not in resp_json or not resp_json["response"].strip():
+        # Log missing/empty responses for troubleshooting
+        print("[ERROR] Ollama API response missing 'response' field or is empty.")
+        print("Full API response:", resp_json)
+        raise RuntimeError("Ollama API response missing or empty.")
+
+    return resp_json["response"]
 
 # =============================================================================
 #  End of ollama_client.py (LLM integration for compliance rule extraction)

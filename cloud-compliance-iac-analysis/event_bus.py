@@ -24,6 +24,7 @@
 #        RABBITMQ_PASS (default: 'password')
 # =============================================================================
 
+
 import pika
 import os
 import json
@@ -31,14 +32,15 @@ import time
 
 def get_connection():
     """
-    Establish a new connection to RabbitMQ using robust, environment-driven config.
-    Adds retry logic to wait for RabbitMQ if it isn't yet ready (avoids race conditions).
-    Returns a pika.BlockingConnection object.
+    Establishes a robust blocking connection to RabbitMQ using environment variables,
+    with retry logic to avoid service startup race conditions.
+    Uses 'rabbitmq' as host (Docker Compose), with admin/password unless overridden.
     """
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
     port = int(os.getenv("RABBITMQ_PORT", 5672))
     user = os.getenv("RABBITMQ_USER", "admin")
     password = os.getenv("RABBITMQ_PASS", "password")
+
     for attempt in range(10):
         try:
             return pika.BlockingConnection(
@@ -48,28 +50,39 @@ def get_connection():
                     credentials=pika.PlainCredentials(user, password)
                 )
             )
-        except pika.exceptions.AMQPConnectionError:
-            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10")
+        except pika.exceptions.AMQPConnectionError as e:
+            print(f"[event_bus.py] Waiting for RabbitMQ... attempt {attempt + 1}/10. Error: {e}")
             time.sleep(5)
     raise Exception("Failed to connect to RabbitMQ after 10 attempts.")
 
 def publish_event(topic, payload):
     """
-    Publishes a JSON event to the specified RabbitMQ queue.
-    - topic (str): The name of the queue/topic (e.g., 'remediation.pipeline')
-    - payload (dict): The event data to send (will be serialized as JSON)
-    Ensures durability and reliability for event-driven integrations.
+    Publishes an event to the specified RabbitMQ queue/topic.
+    - topic (str): The queue/topic to send to (e.g., 'rule.ingestion')
+    - payload (dict): A JSON-serializable dictionary (event data)
+    Ensures durability and reliability for all event-driven integrations.
     """
-    connection = get_connection()
-    channel = connection.channel()
-    channel.queue_declare(queue=topic, durable=True)
-    channel.basic_publish(
-        exchange='',
-        routing_key=topic,
-        body=json.dumps(payload),
-        properties=pika.BasicProperties(delivery_mode=2)
-    )
-    connection.close()
+    connection = None
+    try:
+        connection = get_connection()
+        channel = connection.channel()
+        channel.queue_declare(queue=topic, durable=True)
+        channel.basic_publish(
+            exchange='',
+            routing_key=topic,
+            body=json.dumps(payload),
+            properties=pika.BasicProperties(delivery_mode=2)  # Persistent message
+        )
+        print(f"[event_bus.py] Published event to '{topic}': {payload}")
+    except Exception as e:
+        print(f"[event_bus.py] Failed to publish event to '{topic}': {e}")
+        raise
+    finally:
+        if connection:
+            try:
+                connection.close()
+            except Exception as e:
+                print(f"[event_bus.py] Error closing RabbitMQ connection: {e}")
 
 # =============================================================================
 #  End of event_bus.py (Reusable, robust, and onboarding-ready)
