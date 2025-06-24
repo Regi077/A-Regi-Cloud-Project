@@ -28,6 +28,7 @@
 from flask import Flask, request, jsonify, send_from_directory  # Added send_from_directory for favicon
 from flask_cors import CORS
 import os
+import traceback  # <-- ADDED for full error tracing
 from parse_utils import parse_doc_to_chunks, extract_rules_with_llm, save_json
 from qdrant_utils import upsert_rules_to_qdrant
 from event_bus import publish_event
@@ -84,8 +85,13 @@ def ingest_doc():
       7. Return JSON response with success status and metadata.
     """
     try:
-        # Extract file from incoming POST request
+        # Defensive file check for robust error handling
+        if 'file' not in request.files:
+            return jsonify({"status": "error", "message": "No file part in the request"}), 400
         file = request.files['file']
+        if file.filename == '':
+            return jsonify({"status": "error", "message": "No selected file"}), 400
+
         filename = file.filename
         save_path = os.path.join(UPLOAD_DIR, filename)
         file.save(save_path)
@@ -112,6 +118,9 @@ def ingest_doc():
         }
         publish_event("rule.ingestion", event_payload)
 
+        # Optional: Log to stdout for Docker container logs
+        print(f"[INFO] File '{filename}' ingested successfully and stored at '{json_path}'.")
+
         # Step 6: Respond with processing result summary as JSON
         return jsonify({
             "status": "success",
@@ -121,7 +130,10 @@ def ingest_doc():
         })
 
     except Exception as e:
-        # Log error (consider publishing an error event here)
+        # Print detailed error log for container debugging
+        print("[ERROR] Exception in /ingest-doc:", str(e))
+        traceback.print_exc()
+        # Optionally publish error event here
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.errorhandler(405)
