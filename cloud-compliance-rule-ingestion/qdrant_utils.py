@@ -31,7 +31,7 @@ COLLECTION = os.getenv("QDRANT_COLLECTION", "compliance_rules")
 def upsert_rules_to_qdrant(rules):
     """
     Upserts a list of compliance rules as vector points into the Qdrant database.
-    - Each rule is stored as a payload; a dummy zero-vector is used for now.
+    - Each rule is stored as a dictionary payload, not a string.
     - Automatically creates the collection if it does not already exist.
 
     Args:
@@ -52,9 +52,10 @@ def upsert_rules_to_qdrant(rules):
 
     points = []
     for idx, rule in enumerate(rules):
+        # Ensure rule is a dictionary (not a string) for payload.
         points.append({
             "id": idx,              # Use index as a simple unique ID
-            "payload": rule,        # Store the rule as the payload (searchable/filterable)
+            "payload": dict(rule),  # FORCE rule to dict (avoids stray string errors)
             "vector": [0.0] * 128   # Placeholder vector for now (for future embedding upgrades)
         })
 
