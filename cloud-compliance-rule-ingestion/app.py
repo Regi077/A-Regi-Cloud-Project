@@ -102,6 +102,11 @@ def ingest_doc():
         # Step 2: Use LLM to extract structured compliance rules from chunks
         rules_json = extract_rules_with_llm(chunks)
 
+        # --- DEBUGGING SECTION: Print rule extraction results ---
+        print(f"[DEBUG] Number of rules extracted: {len(rules_json)}")
+        print(f"[DEBUG] Extracted rules sample: {rules_json[:1]}")
+        # -------------------------------------------------------
+
         # Step 3: Save the extracted rules as JSON file for audit and traceability
         json_path = save_json(rules_json, filename, PARSED_DIR)
 
