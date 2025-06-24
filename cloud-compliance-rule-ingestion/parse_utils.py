@@ -2,7 +2,7 @@
 #  parse_utils.py  --  Compliance Document Parsing & LLM Rule Extraction Utility
 # =============================================================================
 #  Author: Reginald
-#  Last updated: 18th June 2025
+#  Last updated: 23rd June 2025
 #
 #  DESCRIPTION:
 #    - Handles document reading (PDF or text), chunking, LLM-based extraction,
@@ -58,6 +58,7 @@ def parse_doc_to_chunks(filepath, chunk_size=700):
 def extract_rules_with_llm(chunks):
     """
     Uses the Ollama LLM to extract compliance rules from each text chunk.
+    Now with robust prompt engineering and raw output logging.
 
     Args:
         chunks (list[str]): Chunks of text from the document.
@@ -66,17 +67,27 @@ def extract_rules_with_llm(chunks):
         list[dict]: Aggregated list of all extracted rules (as Python dicts).
 
     Note:
-        - The prompt requests a JSON list of rules.
+        - The prompt requests a strict JSON list of rules, nothing else.
+        - Logs every LLM output for transparency and troubleshooting.
         - Handles (and skips) chunks that produce invalid JSON.
     """
     all_rules = []
     for chunk in chunks:
-        prompt = f"Extract all compliance rules from this text as JSON list of rules: {chunk}"
+        # STRONG prompt: Instruct LLM to respond ONLY with valid JSON array
+        prompt = (
+            "Extract all compliance rules from the following text. "
+            "Respond ONLY with a JSON array (no commentary or explanation). "
+            "If there are no rules, respond with an empty JSON array [].\n\n"
+            f"Text:\n{chunk}"
+        )
         response = query_ollama(prompt)
+        # Log raw LLM output for debugging (critical for troubleshooting!)
+        print("LLM raw output:", repr(response))
         try:
             rules = json.loads(response)
             all_rules.extend(rules)
-        except Exception:
+        except Exception as e:
+            print("JSON parsing failed for chunk:", e)
             # If response is not valid JSON, skip this chunk
             continue
     return all_rules

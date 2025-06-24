@@ -17,7 +17,7 @@
 //    - Handles file errors, JSON validation, and backend failures gracefully.
 //
 //  KEY FEATURES:
-//    - Idiot-proof UI with clear instructions and feedback.
+//    - UI with clear instructions and feedback.
 //    - Rich color coding for risk (red/yellow/green).
 //    - No external state or dependencies: easy to drop into any React dashboard.
 //
