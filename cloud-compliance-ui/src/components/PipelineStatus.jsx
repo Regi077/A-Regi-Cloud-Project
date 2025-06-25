@@ -1,8 +1,7 @@
 // =============================================================================
 //  PipelineStatus.jsx -- Real-Time Pipeline Agent Status Panel (React)
 // =============================================================================
-//  Author: Reginald 
-//  Last updated: 18th June 2025
+//  Author: Reginald
 //
 //  DESCRIPTION:
 //    - Displays live status for all pipeline agents (Ingestion, Validation, etc.)
@@ -27,12 +26,12 @@ import { io } from "socket.io-client";
 // STATUS & PIPELINE MAPPINGS (Edit these when backend topics or pipelines change)
 // -----------------------------------------------------------------------------
 
-// Status text to Tailwind color class mapping (only edit this for color changes)
-const statusColors = {
-  Idle: "gray",
-  Running: "yellow",
-  Success: "green",
-  Error: "red"
+// Static mapping: status to full Tailwind class (avoids dynamic class pitfalls)
+const statusClassMap = {
+  Idle:    "bg-gray-400 border-gray-300",
+  Running: "bg-yellow-400 border-yellow-300 animate-pulse",
+  Success: "bg-green-500 border-green-300",
+  Error:   "bg-red-500 border-red-300"
 };
 
 // List of pipeline stages in UI order
@@ -68,9 +67,10 @@ function normalizeStatus(status) {
 // -----------------------------------------------------------------------------
 
 function StatusBubble({ status }) {
+  // Full Tailwind class string
   return (
     <span
-      className={`w-3 h-3 mr-2 rounded-full bg-${statusColors[status] || "gray"}-500`}
+      className={`inline-block w-4 h-4 mr-3 rounded-full border-2 shadow ${statusClassMap[status] || "bg-gray-400 border-gray-300"}`}
       title={status}
     />
   );
@@ -117,22 +117,42 @@ export default function PipelineStatus() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  //  UI: Shows pipeline names, color-coded bubbles, and live status text
+  //  UI: Centered Card with Modern List + Status Legend
   // ---------------------------------------------------------------------------
   return (
-    <div className="p-4 bg-white rounded shadow mt-4">
-      <h2 className="font-bold text-xl mb-4">Pipeline Agent Status</h2>
-      <ul>
-        {pipelineStates.map(p => (
-          <li key={p.name} className="flex items-center mb-2">
-            <StatusBubble status={p.status} />
-            <span className="mr-4">{p.name}</span>
-            <span className={`text-${statusColors[p.status] || "gray"}-700 font-semibold`}>
-              {p.status}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div className="flex flex-col items-center w-full">
+      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-xl mx-auto mb-8">
+        <h2 className="font-bold text-xl mb-4 text-center">Pipeline Agent Status</h2>
+        <ul className="space-y-3">
+          {pipelineStates.map(p => (
+            <li
+              key={p.name}
+              className="flex items-center justify-between px-4 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all"
+            >
+              <div className="flex items-center">
+                <StatusBubble status={p.status} />
+                <span className="text-base font-medium">{p.name}</span>
+              </div>
+              <span className={
+                p.status === "Idle"    ? "text-gray-700 font-semibold" :
+                p.status === "Running" ? "text-yellow-700 font-semibold" :
+                p.status === "Success" ? "text-green-700 font-semibold" :
+                p.status === "Error"   ? "text-red-700 font-semibold" :
+                "text-gray-700 font-semibold"
+              }>
+                {p.status}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {/* === Status Legend for Users (Pro-level clarity) === */}
+        <div className="mt-6 flex gap-6 justify-center text-xs items-center">
+          <span className="inline-block w-4 h-4 rounded-full bg-gray-400 border border-gray-300 mr-1" /> Idle
+          <span className="inline-block w-4 h-4 rounded-full bg-yellow-400 animate-pulse border border-yellow-300 mr-1" /> Running
+          <span className="inline-block w-4 h-4 rounded-full bg-green-500 border border-green-300 mr-1" /> Success
+          <span className="inline-block w-4 h-4 rounded-full bg-red-500 border border-red-300 mr-1" /> Error
+        </div>
+      </div>
     </div>
   );
 }
@@ -143,8 +163,6 @@ export default function PipelineStatus() {
 //  - Listens for "pipeline_update" and updates UI instantly for each agent.
 //  - All display/status mappings are centralized for painless updates.
 // =============================================================================
-
-
 
 // =============================================================================
 //  End of PipelineStatus.jsx -- Real-Time Pipeline Agent Status Panel (React)

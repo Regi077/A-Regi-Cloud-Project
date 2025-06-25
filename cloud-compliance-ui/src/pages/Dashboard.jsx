@@ -1,64 +1,49 @@
 // =============================================================================
 //  Dashboard.jsx -- Executive, Hassle-Free Compliance UI Main Panel
 // =============================================================================
-//  Author: Reginald
-//  Last updated: 18th June 2025
+//  Author: Reginald 
 //
 //  DESCRIPTION:
 //    - Central dashboard with tabbed navigation for all compliance workflows.
 //    - Role-based access control: panels/tabs rendered based on user.role.
-//    - Integrates live status, remediation, upload, IAM, risk visualization, etc.
-//    - Code and comments intentionally “idiot-proofed” for fast onboarding.
-//
-//  HOW TO EXTEND:
-//    - To add a tab: update TABS, add render line below, adjust RBAC if needed.
-//    - All panels are decoupled components for easy future swaps/reuse.
-//    - Business logic for RBAC lives here, so never duplicate elsewhere.
+//    - DataInputDashboard: Merges FrameworkUpload, ArchitectureInput, IamAuditPanel, with PipelineStatus always visible.
 // =============================================================================
 
 import React, { useState } from "react";
-import FrameworkUpload from "../components/FrameworkUpload.jsx";
-import ArchitectureInput from "../components/ArchitectureInput.jsx";
-import EngineeringPanel from "../components/EngineeringPanel.jsx";
-import RiskDiagram from "../components/RiskDiagram.jsx";
-import PipelineStatus from "../components/PipelineStatus.jsx"; // Live agent status (real-time, Socket.IO)
+import DataInputDashboard from "./DataInputDashboard.jsx"; // NEW merged input dashboard
 import AgentReasoning from "../components/AgentReasoning.jsx";
-import IamAuditPanel from "../components/IamAuditPanel.jsx"; // IAM policy/risk audits
-import DeltaAnalysisPanel from "../components/DeltaAnalysisPanel.jsx"; // Compliance delta reporting
+import EngineeringPanel from "../components/EngineeringPanel.jsx";
+import DeltaAnalysisPanel from "../components/DeltaAnalysisPanel.jsx";
+import RiskDiagram from "../components/RiskDiagram.jsx";
 
 // === Tab Definitions ===
-// Each object describes a tab. Order = tab row order.
-// Extend this array to add new tabs in the future.
+// - "Data Input" is the new merged panel for all user data inputs.
+// - Other tabs remain as before (Engineering, Risk, Reasoning, Delta).
 const TABS = [
-  { key: "status", label: "Pipeline Status" },      // Shows real-time status for all backend agents
-  { key: "framework", label: "Frameworks" },        // Upload/view compliance frameworks
-  { key: "arch", label: "Architecture" },           // Upload/view system/IaC architectures
-  { key: "eng", label: "Engineering" },             // Remediation suggestions, accept/reject
-  { key: "iam", label: "IAM Audit" },               // IAM role/policy audit panel
-  { key: "risk", label: "Risk Diagram" },           // Visualization of risk/priorities
-  { key: "reason", label: "Agent Reasoning" },      // Agent’s thought process & decision tree
-  { key: "delta", label: "Delta Analysis" }         // Before/after compliance report
+  { key: "datainput", label: "Data Input" },      // NEW merged input panel
+  { key: "eng", label: "Engineering" },           // Remediation suggestions, accept/reject
+  { key: "risk", label: "Risk Diagram" },         // Visualization of risk/priorities
+  { key: "reason", label: "Agent Reasoning" },    // Agent’s thought process & decision tree
+  { key: "delta", label: "Delta Analysis" }       // Before/after compliance report
 ];
 
 // === Dashboard Component ===
 export default function Dashboard({ user, onLogout }) {
-  // Track currently active tab (default = "Pipeline Status")
-  const [tab, setTab] = useState("status");
+  // Default tab = "Data Input" for best onboarding
+  const [tab, setTab] = useState("datainput");
 
-  // === RBAC: Restrict tab access by role ===
-  // - Admin and Service Provider: full access
-  // - Client: only status, frameworks, and risk diagram
+  // RBAC: Full access for Admin/Service Provider, restricted for Client
   const roleTabs = TABS.filter(tabObj => {
     if (["admin", "Service Provider"].includes(user.role)) return true;
     // Client role: restrict to key read-only panels
-    if (user.role === "Client") return ["status", "framework", "risk"].includes(tabObj.key);
+    if (user.role === "Client") return ["datainput", "risk"].includes(tabObj.key);
     return false;
   });
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-8">
       {/* Header Bar: User + Logout */}
-      <div className="flex justify-between mb-6">
+      <div className="flex justify-between items-center w-full max-w-5xl mb-6">
         <h1 className="text-3xl font-bold">
           Welcome, {user.username} ({user.role})
         </h1>
@@ -71,7 +56,7 @@ export default function Dashboard({ user, onLogout }) {
       </div>
 
       {/* === Tab Navigation === */}
-      <div className="mb-6 flex space-x-4">
+      <div className="mb-6 flex space-x-4 w-full max-w-5xl justify-center">
         {roleTabs.map(tabObj => (
           <button
             key={tabObj.key}
@@ -84,14 +69,13 @@ export default function Dashboard({ user, onLogout }) {
       </div>
 
       {/* === Main Content: Panels Rendered By Tab === */}
-      {tab === "status" && <PipelineStatus />}  {/* Live real-time backend agent status */}
-      {tab === "framework" && <FrameworkUpload user={user} />}
-      {tab === "arch" && user.role !== "Client" && <ArchitectureInput />}
-      {tab === "eng" && ["admin", "Service Provider"].includes(user.role) && <EngineeringPanel />}
-      {tab === "iam" && ["admin", "Service Provider"].includes(user.role) && <IamAuditPanel />}
-      {tab === "risk" && <RiskDiagram />}
-      {tab === "reason" && ["admin", "Service Provider"].includes(user.role) && <AgentReasoning />}
-      {tab === "delta" && ["admin", "Service Provider"].includes(user.role) && <DeltaAnalysisPanel />}
+      <div className="flex-grow w-full max-w-5xl flex flex-col items-center">
+        {tab === "datainput" && <DataInputDashboard />}
+        {tab === "eng" && ["admin", "Service Provider"].includes(user.role) && <EngineeringPanel />}
+        {tab === "risk" && <RiskDiagram />}
+        {tab === "reason" && ["admin", "Service Provider"].includes(user.role) && <AgentReasoning />}
+        {tab === "delta" && ["admin", "Service Provider"].includes(user.role) && <DeltaAnalysisPanel />}
+      </div>
     </div>
   );
 }
@@ -101,7 +85,4 @@ export default function Dashboard({ user, onLogout }) {
 //    1. Add new { key, label } to TABS array above.
 //    2. Add {tab === "yourkey" && <YourComponent />} in the render section.
 //    3. Restrict by role (in roleTabs) if needed.
-//
-//  The code above makes access logic and UI wiring explicit for onboarding,
-//  support, and future audits. Extend with confidence.
 // =============================================================================
