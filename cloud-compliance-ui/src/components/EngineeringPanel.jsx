@@ -2,28 +2,22 @@
 //  EngineeringPanel.jsx -- Remediation Suggestion UI for Azure Cloud Compliance
 // =============================================================================
 //  Author: Reginald
-//  Last updated: 18th June 2025
+//  Last updated: 24th June 2025
 //
 //  DESCRIPTION:
 //    - Fetches remediation suggestions from the backend IaC analysis microservice.
 //    - Lets users Accept/Reject individual suggestions, and downloads remediated IaC.
-//    - Designed for idiot-proof, executive-grade usability with clear code comments.
+//    - Notifies parent panel of remediation actions for agent reasoning trace.
+//    - Idiot-proof, executive-grade usability with clear code comments.
 //
-//  KEY FEATURES:
-//    - Fetches remediation advice based on sample IaC for Azure.
-//    - Each suggestion is labeled by priority and has Accept/Reject actions.
-//    - Accept: appends the recommended block to the original IaC for download.
-//    - Download button lets users export the updated, compliant IaC.
-//    - Dummy content is used for demo; integrate with real context/state in production.
-//    - Tailwind CSS for modern, accessible styling.
 // =============================================================================
 
 import React, { useEffect, useState } from "react";
 
-export default function EngineeringPanel() {
+export default function EngineeringPanel({ setReasoningSteps = () => {} }) {
   // State for suggestions from backend, user IaC, and the remediated result
   const [suggestions, setSuggestions] = useState([]);
-  const [iacContent, setIacContent] = useState(""); 
+  const [iacContent, setIacContent] = useState("");
   const [remediatedIac, setRemediatedIac] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -55,11 +49,33 @@ export default function EngineeringPanel() {
       .catch(() => setLoading(false));
   }, [iacContent]);
 
-  // Handle Accept: append block to IaC
-  const handleAccept = (block) => {
+  // Handle Accept: append block to IaC and log action for reasoning
+  const handleAccept = (block, suggestion) => {
     const updated = iacContent + "\n\n" + block;
     setRemediatedIac(updated);
+    setReasoningSteps((steps) => [
+      ...steps,
+      {
+        step: "Remediation Accepted",
+        desc: `User accepted remediation for "${suggestion.text}".`,
+        block,
+        at: new Date().toISOString()
+      }
+    ]);
     alert("Remediation block appended! Download below.");
+  };
+
+  // Handle Reject: log action for reasoning
+  const handleReject = (suggestion) => {
+    setReasoningSteps((steps) => [
+      ...steps,
+      {
+        step: "Remediation Rejected",
+        desc: `User rejected remediation for "${suggestion.text}".`,
+        at: new Date().toISOString()
+      }
+    ]);
+    alert("Suggestion rejected.");
   };
 
   // Download remediated IaC as .tf file
@@ -97,13 +113,13 @@ export default function EngineeringPanel() {
             <span className="flex-1">{s.text}</span>
             <button
               className="bg-green-600 text-white px-2 rounded mx-1"
-              onClick={() => handleAccept(s.suggested_block)}
+              onClick={() => handleAccept(s.suggested_block, s)}
             >
               Accept
             </button>
             <button
               className="bg-red-600 text-white px-2 rounded mx-1"
-              onClick={() => alert("Suggestion rejected.")}
+              onClick={() => handleReject(s)}
             >
               Reject
             </button>

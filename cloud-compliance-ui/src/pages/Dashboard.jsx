@@ -1,13 +1,13 @@
 // =============================================================================
-//  Dashboard.jsx -- Executive, Hassle-Free Compliance UI Main Panel
+//  Dashboard.jsx -- Executive, Hassle-Free Compliance UI Main Panel (Polished)
 // =============================================================================
-//  Author: Reginald 
+//  Author: Reginald
 //
 //  DESCRIPTION:
 //    - Central dashboard with tabbed navigation for all compliance workflows.
 //    - Role-based access control: panels/tabs rendered based on user.role.
-//    - DataInputDashboard: Merges FrameworkUpload, ArchitectureInput, IamAuditPanel, with PipelineStatus always visible.
 //    - Shares state for input and reasoning trace so tabs never lose data.
+//    - Passes state down for future extensibility.
 // =============================================================================
 
 import React, { useState } from "react";
@@ -51,7 +51,11 @@ export default function Dashboard({ user, onLogout }) {
           Welcome, {user.username} ({user.role})
         </h1>
         <button
-          onClick={onLogout}
+          onClick={() => {
+            setReasoningSteps([]);
+            setInputData({});
+            onLogout();
+          }}
           className="text-sm bg-red-400 text-white p-2 rounded"
         >
           Logout
@@ -71,24 +75,34 @@ export default function Dashboard({ user, onLogout }) {
         ))}
       </div>
 
-      {/* === Main Content: Panels Rendered By Tab, centered === */}
+      {/* === Main Content: Panels Rendered By Tab, centered, with shadow/border === */}
       <div className="flex-grow w-full max-w-5xl flex flex-col items-center">
-        {tab === "datainput" && (
-          <DataInputDashboard
-            inputData={inputData}
-            setInputData={setInputData}
-            setReasoningSteps={setReasoningSteps}
-          />
-        )}
-        {tab === "reason" && (
-          <AgentReasoning
-            reasoningSteps={reasoningSteps}
-            inputData={inputData}
-          />
-        )}
-        {tab === "eng" && ["admin", "Service Provider"].includes(user.role) && <EngineeringPanel />}
-        {tab === "delta" && ["admin", "Service Provider"].includes(user.role) && <DeltaAnalysisPanel />}
-        {tab === "risk" && <RiskDiagram />}
+        <div className="w-full bg-white rounded shadow border border-gray-200 p-8 min-h-[400px]">
+          {tab === "datainput" && (
+            <DataInputDashboard
+              inputData={inputData}
+              setInputData={setInputData}
+              setReasoningSteps={setReasoningSteps}
+            />
+          )}
+          {tab === "reason" && (
+            <AgentReasoning
+              reasoningSteps={reasoningSteps}
+              inputData={inputData}
+            />
+          )}
+          {tab === "eng" && ["admin", "Service Provider"].includes(user.role) && (
+            <EngineeringPanel
+              setReasoningSteps={setReasoningSteps} // Future extensibility
+            />
+          )}
+          {tab === "delta" && ["admin", "Service Provider"].includes(user.role) && (
+            <DeltaAnalysisPanel
+              setReasoningSteps={setReasoningSteps} // Future extensibility
+            />
+          )}
+          {tab === "risk" && <RiskDiagram />}
+        </div>
       </div>
     </div>
   );

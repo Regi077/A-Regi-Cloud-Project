@@ -27,16 +27,26 @@ export default function DeltaAnalysisPanel() {
   const [pre, setPre] = useState("");       // For pre-remediation JSON
   const [post, setPost] = useState("");     // For post-remediation JSON
   const [result, setResult] = useState(null); // For analysis results
+  const [error, setError] = useState("");     // Error state
 
   // Compare button handler
   function handleCompare() {
+    let preObj, postObj;
+    try {
+      preObj = JSON.parse(pre);
+      postObj = JSON.parse(post);
+    } catch {
+      setError("Invalid JSON. Please check your input.");
+      return;
+    }
+    setError(""); // Clear previous error
     // Call backend with pre and post JSON
     fetch("http://localhost:5050/compare", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        pre: JSON.parse(pre),
-        post: JSON.parse(post)
+        pre: preObj,
+        post: postObj
       })
     })
       .then(res => res.json())
@@ -60,10 +70,9 @@ export default function DeltaAnalysisPanel() {
       });
   }
 
-
-// =============================================================================
-//  Main UI: Input areas, compare/export controls, and delta results
-// =============================================================================
+  // =============================================================================
+  //  Main UI: Input areas, compare/export controls, and delta results
+  // =============================================================================
 
   return (
     <div className="p-6 bg-white rounded shadow">
@@ -90,6 +99,11 @@ export default function DeltaAnalysisPanel() {
           placeholder='Paste post-remediation JSON here'
         />
       </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="text-red-600 font-semibold mb-2">{error}</div>
+      )}
 
       {/* Compare Button */}
       <button
