@@ -1,32 +1,14 @@
 // =============================================================================
-//  IamAuditPanel.jsx -- Interactive IAM Audit UI Component
+//  IamAuditPanel.jsx -- Interactive IAM Audit UI Component (Persistent)
 // =============================================================================
-//  Author: Reginald 
-//  Last updated: 18th June 2025
+//  Author: Reginald
 //
 //  DESCRIPTION:
-//    - Provides a user interface for uploading or pasting IAM policy JSON for security auditing.
-//    - Connects directly to Phase 6 backend microservice (port 5040) to perform audits.
-//    - Displays color-coded risk scores and human-readable audit findings in real time.
-//    - Designed for ease of use, smooth onboarding, and minimal error risk.
-//
-//  HOW IT WORKS:
-//    - User uploads a .json file *or* pastes IAM JSON directly into a textarea.
-//    - On "Audit IAM" button click, input is validated and POSTed to the backend endpoint.
-//    - Displays high/medium/low risk counts and full details with clear visual cues.
-//    - Handles file errors, JSON validation, and backend failures gracefully.
-//
-//  KEY FEATURES:
-//    - UI with clear instructions and feedback.
-//    - Rich color coding for risk (red/yellow/green).
-//    - No external state or dependencies: easy to drop into any React dashboard.
-//
-//  INTEGRATION NOTES:
-//    - Backend microservice must be running at http://localhost:5040/audit-iam.
-//    - To extend: add more fields, tweak risk color logic, or support bulk audits.
+//    - Persistent IAM audit panel for use in unified Data Input dashboard.
+//    - Notifies parent of audit results and restores last state when tab switches.
 // =============================================================================
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // Utility for color-coding risk in audit results
 function riskColor(risk) {
@@ -35,23 +17,31 @@ function riskColor(risk) {
   return "text-green-600 font-bold";
 }
 
-export default function IamAuditPanel() {
-  const [input, setInput] = useState("");      // IAM JSON text (manual paste or file upload)
-  const [result, setResult] = useState(null);  // Audit results from backend
-  const [error, setError] = useState("");      // Any user or backend error
+export default function IamAuditPanel({ onComplete = () => {}, value = null }) {
+  // State for IAM input and audit result
+  const [input, setInput] = useState(value?.input || "");
+  const [result, setResult] = useState(value?.result || null);
+  const [error, setError] = useState("");
 
-  // Handles file uploads (reads file, puts content in textarea, clears errors)
+  // Restore last audit if parent passes a new value (tab switch)
+  useEffect(() => {
+    if (value && value.input !== undefined && value.input !== input) setInput(value.input);
+    if (value && value.result !== undefined && value.result !== result) setResult(value.result);
+    // eslint-disable-next-line
+  }, [value]);
+
+  // Handles file uploads
   function handleFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      setInput(e.target.result); // Show uploaded file in textarea for transparency
+      setInput(e.target.result);
       setError("");
     };
     reader.onerror = () => setError("Failed to read file. Please try another file.");
     reader.readAsText(file);
   }
 
-  // Handles clicking "Audit IAM": parses JSON, sends to backend, processes response
+  // Handles clicking "Audit IAM"
   function handleAudit() {
     setError("");
     let json;
@@ -70,7 +60,10 @@ export default function IamAuditPanel() {
         if (!res.ok) throw new Error("Server error");
         return res.json();
       })
-      .then(data => setResult(data))
+      .then(data => {
+        setResult(data);
+        onComplete({ input, result: data }); // Sync up for Agent Reasoning trace
+      })
       .catch(() => setError("Failed to audit IAM JSON!"));
   }
 
@@ -79,7 +72,7 @@ export default function IamAuditPanel() {
   // =============================================================================
 
   return (
-    <div className="p-6 bg-white rounded shadow">
+    <div className="p-6 bg-white rounded shadow w-full">
       <h2 className="font-bold text-xl mb-4">IAM Audit</h2>
       
       {/* File Upload Section */}
@@ -140,5 +133,5 @@ export default function IamAuditPanel() {
 }
 
 // =============================================================================
-//  End of IamAuditPanel.jsx -- Secure, user-friendly IAM risk auditing panel
+//  End of IamAuditPanel.jsx -- Secure, user-friendly IAM risk auditing panel (persistent)
 // =============================================================================

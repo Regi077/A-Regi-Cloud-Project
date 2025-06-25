@@ -7,10 +7,7 @@
 //    - Merges FrameworkUpload, ArchitectureInput, and IamAuditPanel into one dashboard.
 //    - PipelineStatus bar is always visible at the top for live agent feedback.
 //    - User can tab between Framework Upload, Architecture Input, IAM Audit.
-//
-//  HOW TO EXTEND:
-//    - To add more input methods, add another tab+panel below.
-//    - Logic and styling are explicit for fast onboarding and dev confidence.
+//    - Accepts props for persistent state handling (inputData, setInputData, setReasoningSteps).
 // =============================================================================
 
 import React, { useState } from "react";
@@ -27,9 +24,48 @@ const INPUT_TABS = [
 ];
 
 // --- MAIN COMPONENT ---
-export default function DataInputDashboard() {
+export default function DataInputDashboard({
+  inputData = {},
+  setInputData = () => {},
+  setReasoningSteps = () => {}
+}) {
   // Track which input panel is active
   const [tab, setTab] = useState("framework");
+
+  // --- Handlers to update state and trace reasoning ---
+  function handleFrameworkUpload(result) {
+    setInputData(data => ({ ...data, framework: result }));
+    setReasoningSteps(steps => [
+      ...steps,
+      {
+        step: "Framework Uploaded",
+        result,
+        at: new Date().toISOString()
+      }
+    ]);
+  }
+  function handleArchitectureInput(result) {
+    setInputData(data => ({ ...data, architecture: result }));
+    setReasoningSteps(steps => [
+      ...steps,
+      {
+        step: "Architecture Uploaded",
+        result,
+        at: new Date().toISOString()
+      }
+    ]);
+  }
+  function handleIamAudit(result) {
+    setInputData(data => ({ ...data, iam: result }));
+    setReasoningSteps(steps => [
+      ...steps,
+      {
+        step: "IAM Audit",
+        result,
+        at: new Date().toISOString()
+      }
+    ]);
+  }
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -57,9 +93,24 @@ export default function DataInputDashboard() {
 
       {/* === Input Panels: Centered and on white card === */}
       <div className="w-full max-w-3xl flex flex-col items-center bg-white rounded shadow p-8">
-        {tab === "framework" && <FrameworkUpload />}
-        {tab === "architecture" && <ArchitectureInput />}
-        {tab === "iam" && <IamAuditPanel />}
+        {tab === "framework" && (
+          <FrameworkUpload
+            onComplete={handleFrameworkUpload}
+            value={inputData.framework}
+          />
+        )}
+        {tab === "architecture" && (
+          <ArchitectureInput
+            onComplete={handleArchitectureInput}
+            value={inputData.architecture}
+          />
+        )}
+        {tab === "iam" && (
+          <IamAuditPanel
+            onComplete={handleIamAudit}
+            value={inputData.iam}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,31 +1,26 @@
 // =============================================================================
 //  FrameworkUpload.jsx -- UI Component for Uploading Compliance Framework Files
 // =============================================================================
-//  Author: Reginald 
-//  Last updated: 18th June 2025
+//  Author: Reginald
 //
 //  DESCRIPTION:
 //    - Lets users upload compliance framework files (PDF or TXT) to the backend ingestion pipeline.
-//    - Integrates directly with Phase 3 microservice at :5010/ingest-doc.
-//    - Handles file selection, error feedback, upload confirmation, and response display.
-//    - Designed for clarity, ease of use, and seamless onboarding for new developers.
-//
-//  HOW IT WORKS:
-//    - User selects a file (only first file used if multiple selected).
-//    - Clicks Upload to POST the file to backend.
-//    - Displays upload result (success or error) with clear feedback.
-//    - Ready to embed as a dashboard tab or as a standalone component.
-//
-//  NOTES:
-//    - Backend endpoint (http://localhost:5010/ingest-doc) must be running.
-//    - All state management is local; does not require external props/context.
+//    - Accepts `onComplete` and `value` props for persistent state and LLM reasoning sync.
+//    - Notifies parent dashboard on upload complete, so data is always in sync across tabs.
 // =============================================================================
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-export default function FrameworkUpload() {
+export default function FrameworkUpload({ onComplete = () => {}, value = null }) {
   const [files, setFiles] = useState([]);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(value); // Show parent state if available
+
+  // Sync up with parent when "value" changes (e.g., after tab switch)
+  useEffect(() => {
+    if (value && value !== result) setResult(value);
+    // If tab was cleared elsewhere, update here too
+    if (!value && result) setResult(null);
+  }, [value]);
 
   // Update state when files are selected
   function handleChange(e) {
@@ -46,8 +41,14 @@ export default function FrameworkUpload() {
       body: formData
     })
       .then(res => res.json())
-      .then(data => setResult(data))
-      .catch(err => setResult({ error: err.message }));
+      .then(data => {
+        setResult(data);
+        onComplete(data); // Notify parent for sync
+      })
+      .catch(err => {
+        setResult({ error: err.message });
+        onComplete({ error: err.message }); // Also notify parent
+      });
   }
 
   // =============================================================================
@@ -85,5 +86,5 @@ export default function FrameworkUpload() {
 }
 
 // =============================================================================
-//  End of FrameworkUpload.jsx -- Hassle-free compliance framework uploader
+//  End of FrameworkUpload.jsx -- Hassle-free compliance framework uploader (persistent)
 // =============================================================================

@@ -1,50 +1,86 @@
 // =============================================================================
 //  AgentReasoning.jsx -- Cloud Compliance Agent Reasoning Trace Component
 // =============================================================================
-//  Author: Reginald 
-//  Last updated: 18th June 2025
+//  Author: Reginald
 //
 //  DESCRIPTION:
-//    - Displays the step-by-step "thought process" or decision trace of the AI/agent.
-//    - Each step mimics what a human or LLM agent might consider while reviewing
-//      compliance framework requirements versus organizational policies.
-//    - Hardcoded for demo purposes, but structured for easy extension to dynamic data.
-//
-//  USAGE:
-//    - Import and include <AgentReasoning /> in your dashboard or any panel.
-//    - In production, replace the static `reasoning` array with data pulled from
-//      the backend (e.g., LLM-generated or pipeline logs).
-//
+//    - Displays the real-time step-by-step thought process or decision trace from the LLM/agent.
+//    - Visually logs each step as a timeline, DeepSeek-style, with time, step type, and description.
+//    - Latest step animates with a typing indicator (animated dots).
+//    - Also shows the current inputData state at the bottom (used for context/debug).
+//    - Accepts reasoningSteps (array) and inputData (object) as props from Dashboard.
 // =============================================================================
 
 import React from "react";
 
-// Example reasoning steps for demo and onboarding
-const reasoning = [
-  { step: "Thought", desc: "Should check NIST password length policy" },
-  { step: "Action", desc: "Parsed framework PDF for password policy section" },
-  { step: "Observation", desc: "Found: Min length 12" },
-  { step: "Thought", desc: "Compare to org's current policy (min 8)" },
-  { step: "Action", desc: "Flagged as non-compliant, recommended remediation" },
-  { step: "Final Verdict", desc: "Display recommendation in Engineering panel" }
-];
+// Typing Animation Dots (for last step)
+function TypingDots() {
+  const [dots, setDots] = React.useState(".");
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(dots => (dots.length < 3 ? dots + "." : "."));
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+  return <span className="ml-1">{dots}</span>;
+}
 
-// Main export: AgentReasoning component
-export default function AgentReasoning() {
+export default function AgentReasoning({ reasoningSteps = [], inputData = {} }) {
   return (
-    <div>
+    <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
       <h2 className="font-bold text-xl mb-4">Agent Reasoning Trace</h2>
-      <ol className="list-decimal ml-6">
-        {reasoning.map((r, idx) => (
-          <li key={idx} className="mb-2">
-            <b>{r.step}:</b> {r.desc}
-          </li>
+      <div className="w-full bg-gray-100 rounded p-4 space-y-4 shadow min-h-[200px]">
+        {/* If empty, display placeholder */}
+        {reasoningSteps.length === 0 && (
+          <div className="text-gray-500 text-center">
+            No reasoning steps yet. Start by uploading data or performing an action.
+          </div>
+        )}
+
+        {/* Otherwise, show reasoning timeline */}
+        {reasoningSteps.map((step, idx) => (
+          <div key={idx} className="flex items-start">
+            {/* Step Type (dot and label) */}
+            <div className="flex-shrink-0 mr-2 mt-1">
+              <span
+                className={`w-3 h-3 rounded-full inline-block
+                  ${step.step === "Final Verdict"
+                    ? "bg-green-500"
+                    : step.step === "Error"
+                    ? "bg-red-500"
+                    : "bg-gray-400"}
+                `}
+                title={step.step}
+              />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-700">
+                {step.step || "Step"}
+                <span className="ml-2 text-xs text-gray-400">
+                  {step.at ? new Date(step.at).toLocaleTimeString() : ""}
+                </span>
+              </div>
+              <div className="text-gray-800">
+                {step.desc || step.result || ""}
+                {/* Typing animation for last (most recent) step only */}
+                {idx === reasoningSteps.length - 1 && <TypingDots />}
+              </div>
+            </div>
+          </div>
         ))}
-      </ol>
+
+        {/* Show inputData summary at the bottom, only if not empty */}
+        {inputData && Object.keys(inputData).length > 0 && (
+          <div className="mt-6 bg-white rounded p-4 shadow text-xs text-gray-700">
+            <div className="font-semibold mb-2 text-gray-800">Current Input Data:</div>
+            <pre className="overflow-x-auto">{JSON.stringify(inputData, null, 2)}</pre>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 // =============================================================================
-//  End of AgentReasoning.jsx -- Clean, human-readable trace for dev & user insight
+//  End of AgentReasoning.jsx -- Live, DeepSeek-style agent trace with animation and input state
 // =============================================================================
