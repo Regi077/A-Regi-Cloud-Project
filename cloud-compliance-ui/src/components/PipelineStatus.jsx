@@ -63,20 +63,6 @@ function normalizeStatus(status) {
 }
 
 // -----------------------------------------------------------------------------
-// REUSABLE COMPONENT: StatusBubble (displays colored dot based on status)
-// -----------------------------------------------------------------------------
-
-function StatusBubble({ status }) {
-  // Full Tailwind class string
-  return (
-    <span
-      className={`inline-block w-4 h-4 mr-3 rounded-full border-2 shadow ${statusClassMap[status] || "bg-gray-400 border-gray-300"}`}
-      title={status}
-    />
-  );
-}
-
-// -----------------------------------------------------------------------------
 // MAIN COMPONENT: PipelineStatus
 // -----------------------------------------------------------------------------
 
@@ -117,35 +103,28 @@ export default function PipelineStatus() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  //  UI: Centered Card with Modern List + Status Legend
+  //  UI: Large, Clean Bubbles Row with Labels Below, Legend at Bottom
+  //  [AI-ADD] Updated per latest step-by-step reference for executive visuals.
   // ---------------------------------------------------------------------------
   return (
     <div className="flex flex-col items-center w-full">
       <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-xl mx-auto mb-8">
-        <h2 className="font-bold text-xl mb-4 text-center">Pipeline Agent Status</h2>
-        <ul className="space-y-3">
+        <h2 className="font-bold text-xl mb-8 text-center">Pipeline Agent Status</h2>
+        {/* [AI-ADD] Bubbles row with labels below each bubble, evenly spaced */}
+        <div className="flex flex-row justify-between w-full mb-16 px-8">
           {pipelineStates.map(p => (
-            <li
-              key={p.name}
-              className="flex items-center justify-between px-4 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all"
-            >
-              <div className="flex items-center">
-                <StatusBubble status={p.status} />
-                <span className="text-base font-medium">{p.name}</span>
-              </div>
-              <span className={
-                p.status === "Idle"    ? "text-gray-700 font-semibold" :
-                p.status === "Running" ? "text-yellow-700 font-semibold" :
-                p.status === "Success" ? "text-green-700 font-semibold" :
-                p.status === "Error"   ? "text-red-700 font-semibold" :
-                "text-gray-700 font-semibold"
-              }>
-                {p.status}
-              </span>
-            </li>
+            <div key={p.name} className="flex flex-col items-center flex-1">
+              {/* [AI-ADD] Large, real colored bubble (not a bullet) */}
+              <span
+                className={`w-8 h-8 rounded-full border-4 shadow-lg mb-2
+                  ${statusClassMap[p.status] || "bg-gray-400 border-gray-300"}`}
+                title={p.status}
+              />
+              <span className="text-lg font-medium">{p.name}</span>
+            </div>
           ))}
-        </ul>
-        {/* === Status Legend for Users (Pro-level clarity) === */}
+        </div>
+        {/* [AI-ADD] Status legend at bottom, clean, clear */}
         <div className="mt-6 flex gap-6 justify-center text-xs items-center">
           <span className="inline-block w-4 h-4 rounded-full bg-gray-400 border border-gray-300 mr-1" /> Idle
           <span className="inline-block w-4 h-4 rounded-full bg-yellow-400 animate-pulse border border-yellow-300 mr-1" /> Running

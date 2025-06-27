@@ -77,7 +77,8 @@ export default function Dashboard({ user, onLogout }) {
 
       {/* === Main Content: Panels Rendered By Tab, centered, with shadow/border === */}
       <div className="flex-grow w-full max-w-5xl flex flex-col items-center">
-        <div className="w-full bg-white rounded shadow border border-gray-200 p-8 min-h-[400px]">
+        {/*  Replaced box styling for pure, borderless, floating layout */}
+        <div className="w-full bg-transparent rounded-none shadow-none border-0 p-0 min-h-[400px]">
           {tab === "datainput" && (
             <DataInputDashboard
               inputData={inputData}
