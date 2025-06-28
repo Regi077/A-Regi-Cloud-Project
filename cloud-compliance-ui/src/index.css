@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pipeline-bubble-container * {
+  list-style: none !important;
+  margin: initial !important;
+  padding: initial !important;
+}
+
+span, div {
+  box-sizing: border-box !important;
+}
+
+
 /* --- Executive SaaS Faint Background & Centering --- */
 body {
   min-height: 100vh;
@@ -83,3 +100,4 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+

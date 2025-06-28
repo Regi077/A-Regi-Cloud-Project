@@ -103,34 +103,31 @@ export default function PipelineStatus() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  //  UI: Large, Clean Bubbles Row with Labels Below, Legend at Bottom
-  //  [AI-ADD] Updated per latest step-by-step reference for executive visuals.
+  //  UI: Large, Clean Bubbles Row with Labels Below, Executive Spacing, No Box
+  //  [AI-ADD] FINAL FIX: No <ul>, no <li>, no legend, no status text, just bubbles.
   // ---------------------------------------------------------------------------
   return (
     <div className="flex flex-col items-center w-full">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-xl mx-auto mb-8">
-        <h2 className="font-bold text-xl mb-8 text-center">Pipeline Agent Status</h2>
-        {/* [AI-ADD] Bubbles row with labels below each bubble, evenly spaced */}
-        <div className="flex flex-row justify-between w-full mb-16 px-8">
-          {pipelineStates.map(p => (
-            <div key={p.name} className="flex flex-col items-center flex-1">
-              {/* [AI-ADD] Large, real colored bubble (not a bullet) */}
-              <span
-                className={`w-8 h-8 rounded-full border-4 shadow-lg mb-2
-                  ${statusClassMap[p.status] || "bg-gray-400 border-gray-300"}`}
-                title={p.status}
-              />
-              <span className="text-lg font-medium">{p.name}</span>
-            </div>
-          ))}
-        </div>
-        {/* [AI-ADD] Status legend at bottom, clean, clear */}
-        <div className="mt-6 flex gap-6 justify-center text-xs items-center">
-          <span className="inline-block w-4 h-4 rounded-full bg-gray-400 border border-gray-300 mr-1" /> Idle
-          <span className="inline-block w-4 h-4 rounded-full bg-yellow-400 animate-pulse border border-yellow-300 mr-1" /> Running
-          <span className="inline-block w-4 h-4 rounded-full bg-green-500 border border-green-300 mr-1" /> Success
-          <span className="inline-block w-4 h-4 rounded-full bg-red-500 border border-red-300 mr-1" /> Error
-        </div>
+      <h2 className="font-bold text-2xl mb-8 text-center">Pipeline Agent Status</h2>
+
+      
+      {/* --- Bubbles Row: NO ul/li, just a flex row of large circles --- */}
+      <div className="flex flex-row justify-center items-end w-full mb-12 gap-16">
+        {pipelineStates.map(p => (
+
+          <div className="flex flex-col items-center flex-1 min-w-[90px] list-none !m-0 !p-0">
+          
+            {/* Big, true bubbles */}
+            
+            <span 
+              className={`inline-block w-12 h-12 rounded-full border-4 shadow-lg mb-2 z-10 
+              ${statusClassMap[p.status] || "bg-gray-400 border-gray-300"}`}
+            />
+
+            
+            <span className="text-base font-semibold mt-1">{p.name}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

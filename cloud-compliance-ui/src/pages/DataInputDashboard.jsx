@@ -70,12 +70,15 @@ export default function DataInputDashboard({
   return (
     <div className="w-full flex flex-col items-center">
       {/* === Always-on Pipeline Status (shows backend agent status at a glance) === */}
-      <div className="w-full max-w-3xl">
+      
+      <div className="w-full max-w-3xl pb-8"> 
+      
         <PipelineStatus />
       </div>
 
       {/* === Input Tab Navigation (centered) === */}
-      <div className="mt-8 mb-8 flex space-x-4 justify-center w-full max-w-3xl">
+
+      <div className="mt-16 mb-10 flex space-x-4 justify-center w-full max-w-3xl">
         {INPUT_TABS.map(tabObj => (
           <button
             key={tabObj.key}
