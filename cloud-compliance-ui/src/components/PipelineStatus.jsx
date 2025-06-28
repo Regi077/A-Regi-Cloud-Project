@@ -32,6 +32,7 @@ const statusClassMap = {
   Running: "bg-yellow-400 border-yellow-300 animate-pulse",
   Success: "bg-green-500 border-green-300",
   Error: "bg-red-500 border-red-300"
+  
 };
 
 const pipelineNames = [
@@ -93,24 +94,26 @@ export default function PipelineStatus() {
     <div className="pipeline-container">
       <div className="flex flex-col items-center w-full">
         <h2 className="font-bold text-2xl mb-8 text-center">Pipeline Agent Status</h2>
-        <div className="pipeline-bubble-container flex flex-row justify-center items-end w-full mb-20 gap-16">
-          {pipelineStates.map(p => (
-            <div
-              key={p.name}
-              className="flex flex-col items-center flex-1 min-w-[70px] list-none !m-0 !p-0"
-            >
-              <span
-                className={`w-6 h-6 rounded-full border-4 shadow-lg mb-2 z-10 ${statusClassMap[p.status]}`}
-                style={{ display: "inline-block" }}
-                title={p.status}
-              />
-              <span className="text-base font-semibold mt-1">{p.name}</span>
-            </div>
-          ))}
-        </div>
-        {/* === Spacer for extra space below bubbles and before next section === */}
-         <div className="w-full mt-100" />
-         
+      
+     
+  <div className="pipeline-bubble-container flex flex-row justify-center items-center w-full mb-12 gap-16">
+    {pipelineStates.map(p => (
+      <div
+        key={p.name}
+        className="flex flex-col items-center flex-1 min-w-[90px] list-none !m-0 !p-0"
+      >
+        <span
+          className={`w-12 h-12 rounded-full border-4 shadow-lg mb-2 z-10 ${statusClassMap[p.status]}`}
+          style={{ display: "inline-block" }}
+        />
+        <span className="text-base font-semibold text-center">{p.name}</span>
+      </div>
+    ))}
+  </div>
+
+    <h2 className="font-bold text-2xl mb-8 text-center"></h2>
+
+
       </div>
 
 
@@ -119,6 +122,9 @@ export default function PipelineStatus() {
 }
 
 // =============================================================================
+//
+//  <h2 className="font-bold text-2xl mb-8 text-center"></h2>  -- used as a tool to create spcae 
+// between the pipeline status and the next section in the UI. --- Never to be removed no matter what.
 //  How This Works (For Future Onboarding):
 //  - Connects to backend dashboard using Socket.IO for live pipeline events.
 //  - Listens for "pipeline_update" and updates UI instantly for each agent.
