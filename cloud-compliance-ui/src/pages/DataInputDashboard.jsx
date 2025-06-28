@@ -70,14 +70,13 @@ export default function DataInputDashboard({
   return (
     <div className="w-full flex flex-col items-center">
       {/* === Always-on Pipeline Status (shows backend agent status at a glance) === */}
-      
-      <div className="w-full max-w-3xl pb-8"> 
-      
+      {/* [AI-ADD] Added pb-8 for extra bottom padding under pipeline status bar */}
+      <div className="w-full max-w-3xl pb-12">
         <PipelineStatus />
       </div>
 
       {/* === Input Tab Navigation (centered) === */}
-
+      {/* [AI-ADD] Increased mt-16 for more top margin, mb-10 for more space below tabs */}
       <div className="mt-16 mb-10 flex space-x-4 justify-center w-full max-w-3xl">
         {INPUT_TABS.map(tabObj => (
           <button

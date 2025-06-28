@@ -2,22 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* === List reset: Only affect ul, ol === */
 ul, ol {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+/* === Exception: Restore default margin/padding for pipeline bubble container === */
 .pipeline-bubble-container * {
   list-style: none !important;
   margin: initial !important;
   padding: initial !important;
 }
 
-span, div {
-  box-sizing: border-box !important;
+/* === Fallback: Force pipeline bubble styles if anything breaks === */
+/* === Fallback: Force pipeline bubble styles if anything breaks === */
+.pipeline-bubble-container span[class*="rounded-full"] {
+  display: inline-block !important;
+  width: 2rem !important;      /* Changed from 3rem to 2rem */
+  height: 2rem !important;     /* Changed from 3rem to 2rem */
+  border-radius: 9999px !important;
+  border-width: 4px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
 }
 
+/* === Manual color fallbacks === */
+.bg-gray-400   { background-color: #9ca3af !important; }
+.bg-yellow-400 { background-color: #fbbf24 !important; }
+.bg-green-500  { background-color: #10b981 !important; }
+.bg-red-500    { background-color: #ef4444 !important; }
 
 /* --- Executive SaaS Faint Background & Centering --- */
 body {
@@ -31,7 +45,6 @@ body {
 }
 
 /* ...rest of your :root, a, h1, button, etc... */
-
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -100,4 +113,3 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
-
